@@ -1,0 +1,13 @@
+audio_speaker_node.c:353:16:AUDIO_SpeakerStop	0	static
+audio_speaker_node.c:369:16:AUDIO_SpeakerChangeFrequency	0	static
+audio_speaker_node.c:516:16:AUDIO_SpeakerStartReadCount	0	static
+audio_speaker_node.c:533:18:AUDIO_SpeakerGetLastReadCount	8	static
+audio_speaker_node.c:384:14:AUDIO_SpeakerInitInjectionsParams	8	static
+audio_speaker_node.c:439:16:AUDIO_SpeakerSetVolume	8	static
+audio_speaker_node.c:415:16:AUDIO_SpeakerMute	8	static
+audio_speaker_node.c:334:16:AUDIO_SpeakerStart	16	static
+audio_speaker_node.c:301:16:AUDIO_SpeakerDeInit	8	static
+audio_speaker_node.c:110:10:AUDIO_SPEAKER_USER_Init	16	static
+audio_speaker_node.c:153:6:BSP_AUDIO_OUT_Error_CallBack	0	static
+audio_speaker_node.c:164:6:BSP_AUDIO_OUT_TransferComplete_CallBack	16	static
+audio_speaker_node.c:291:6:BSP_AUDIO_OUT_HalfTransfer_CallBack	0	static

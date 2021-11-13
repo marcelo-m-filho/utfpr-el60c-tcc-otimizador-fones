@@ -1,0 +1,13 @@
+wm8994_ex.c:862:10:wm8994_SetOutputMode	16	static
+wm8994_ex.c:949:10:wm8994_SetFrequency	8	static
+wm8994_ex.c:1004:10:wm8994_Reset	8	static
+wm8994_ex.c:621:6:wm8994_DeInit	0	static
+wm8994_ex.c:632:10:wm8994_ReadID	8	static
+wm8994_ex.c:827:10:wm8994_SetMute	16	static
+wm8994_ex.c:646:10:wm8994_Play	0	static
+wm8994_ex.c:681:10:wm8994_Resume	0	static
+wm8994_ex.c:662:10:wm8994_Pause	16	static
+wm8994_ex.c:751:10:wm8994_SetVolume	32	static
+wm8994_ex.c:138:11:wm8994_InitExt	40	static
+wm8994_ex.c:705:10:wm8994_Stop	32	static
+wm8994_ex.c:121:10:wm8994_Init	16	static

@@ -1,0 +1,4 @@
+usbd_audio_if.c:95:16:AUDIO_USB_DeInit	8	static
+usbd_audio_if.c:118:16:AUDIO_USB_GetState	0	static
+usbd_audio_if.c:131:16:AUDIO_USB_GetConfigDesc	8	static
+usbd_audio_if.c:62:16:AUDIO_USB_Init	24	static
