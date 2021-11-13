@@ -33,7 +33,7 @@
   * @brief This is the list of modules to be used in the HAL driver 
   */
 #define HAL_MODULE_ENABLED  
-/* #define HAL_ADC_MODULE_ENABLED */
+#define HAL_ADC_MODULE_ENABLED
 /* #define HAL_CAN_MODULE_ENABLED */
 /* #define HAL_CEC_MODULE_ENABLED */
 /* #define HAL_CRC_MODULE_ENABLED */
@@ -47,7 +47,7 @@
 /* #define HAL_NAND_MODULE_ENABLED */
 /* #define HAL_NOR_MODULE_ENABLED */
 #define HAL_SRAM_MODULE_ENABLED
-/* #define HAL_SDRAM_MODULE_ENABLED */
+#define HAL_SDRAM_MODULE_ENABLED
 /* #define HAL_HASH_MODULE_ENABLED */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED

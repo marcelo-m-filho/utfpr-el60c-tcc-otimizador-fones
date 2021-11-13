@@ -1,22 +1,3 @@
-/**
-  ******************************************************************************
-  * @file    main.c
-  * @author  MCD Application Team 
-  * @brief   USB device AUDIO demo main file
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019  STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_audio.h"
@@ -48,7 +29,8 @@ extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
   */
 int main(void)
 {
-  
+  uint8_t  lcd_status = LCD_OK;
+
   /* STM32F7xx HAL library initialization:
        - Configure the Flash ART accelerator on ITCM interface
        - Configure the Systick to generate an interrupt each 1 msec
