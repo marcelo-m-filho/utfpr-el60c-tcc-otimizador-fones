@@ -1,5 +1,8 @@
 {
     "workbench.colorCustomizations": {
-        "titleBar.activeBackground": "#34f620"
+        "titleBar.activeBackground": "#408843"
+    },
+    "files.associations": {
+        "main.h": "c"
     }
 }
