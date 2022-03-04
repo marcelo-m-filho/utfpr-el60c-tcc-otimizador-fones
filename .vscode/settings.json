@@ -4,5 +4,6 @@
     },
     "files.associations": {
         "main.h": "c"
-    }
+    },
+    "cortex-debug.registerUseNaturalFormat": false
 }

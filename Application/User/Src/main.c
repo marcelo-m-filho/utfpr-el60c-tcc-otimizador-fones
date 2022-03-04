@@ -1,5 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "utfprlogo.h"
 #include "usb_audio.h"
 #include "image_320x240_argb8888.h"
 #include "life_augmented_argb8888.h"
@@ -52,6 +53,7 @@ uint32_t uwPrescalerValue = 0;
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
+static void Display_DemoDescription(void);
 static void OnError_Handler(uint32_t condition);
 static void CPU_CACHE_Enable(void);
 static uint8_t LCD_Init(void);
@@ -103,36 +105,42 @@ int main(void)
 	BSP_SDRAM_Init();
 
 	// initializes LCD
-//	lcd_status = LCD_Init();
-	OnError_Handler(lcd_status != LCD_OK);
+	lcd_status = BSP_LCD_Init();
+	while(lcd_status != LCD_OK);
 
 	/* Initialize LTDC layer 0 iused for Hint */
 	LCD_LayertInit(0, LAYER0_ADDRESS);
 	BSP_LCD_SelectLayer(0);
 
-	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_CASET, pColLeft);
-	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_PASET, pPage);
+	BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
 
-	/* Update pitch : the draw is done on the whole physical X Size */
-	HAL_LTDC_SetPitch(&hltdc_discovery, BSP_LCD_GetXSize(), 0);
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-	/* Display example brief   */
-	LCD_BriefDisplay();
+	Display_DemoDescription();
 
-	/* Show first image */
-	CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
+//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_CASET, pColLeft);
+//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_PASET, pPage);
 
-	pending_buffer = 0;
-	active_area = LEFT_AREA;
-
-	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 2, OTM8009A_CMD_WRTESCN, pSyncLeft);
-
-	/* Send Display On DCS Command to display */
-	HAL_DSI_ShortWrite(&(hdsi_discovery),
-	                   0,
-	                   DSI_DCS_SHORT_PKT_WRITE_P1,
-	                   OTM8009A_CMD_DISPON,
-	                   0x00);
+//	/* Update pitch : the draw is done on the whole physical X Size */
+//	HAL_LTDC_SetPitch(&hltdc_discovery, BSP_LCD_GetXSize(), 0);
+//
+//	/* Display example brief   */
+//	LCD_BriefDisplay();
+//
+//	/* Show first image */
+//	CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
+//
+//	pending_buffer = 0;
+//	active_area = LEFT_AREA;
+//
+//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 2, OTM8009A_CMD_WRTESCN, pSyncLeft);
+//
+//	/* Send Display On DCS Command to display */
+//	HAL_DSI_ShortWrite(&(hdsi_discovery),
+//	                   0,
+//	                   DSI_DCS_SHORT_PKT_WRITE_P1,
+//	                   OTM8009A_CMD_DISPON,
+//	                   0x00);
 
 	// ----------- USB Device Initialization -----------
 	/* Init Device Library */
@@ -267,37 +275,33 @@ void SystemClock_Config(void)
 	/* Enable HSE Oscillator and activate PLL with HSE as source */
 	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
+//	RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
 	RCC_OscInitStruct.PLL.PLLM = 25;
-	RCC_OscInitStruct.PLL.PLLN = 384;
+	RCC_OscInitStruct.PLL.PLLN = 400;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
 	RCC_OscInitStruct.PLL.PLLQ = 8;
 	RCC_OscInitStruct.PLL.PLLR = 7;
+
 	if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
 		Error_Handler();
-	}
+
 	/* Select PLLSAI output as USB clock source */
 	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CLK48;
 	PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
 	if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)  != HAL_OK)
-	{
 		Error_Handler();
-	}
 
-	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
-	   clocks dividers */
+	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers */
 	RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
 	if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
-	{
 		Error_Handler();
-	}
 }
 
 /**
@@ -604,6 +608,43 @@ static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x, uint16_t y, 
 			}
 		}
 	}
+}
+
+static void Display_DemoDescription(void)
+{
+  char desc[50];
+
+  /* Set LCD Foreground Layer  */
+  BSP_LCD_SelectLayer(0);
+
+  BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
+
+  /* Clear the LCD */
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+  BSP_LCD_Clear(LCD_COLOR_WHITE);
+
+  /* Set the LCD Text Color */
+  BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
+
+  /* Display LCD messages */
+  BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A1", CENTER_MODE);
+
+  /* Draw Bitmap */
+  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
+
+  BSP_LCD_SetFont(&Font12);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
+
+  BSP_LCD_SetFont(&Font24);
+  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+  BSP_LCD_FillRect(0, BSP_LCD_GetYSize()/2 + 15, BSP_LCD_GetXSize(), 90);
+  BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD Inicial", CENTER_MODE);
+//  sprintf(desc,"%s example", "");
+//  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2 + 45, (uint8_t *)desc, CENTER_MODE);
 }
 
 #ifdef  USE_FULL_ASSERT
