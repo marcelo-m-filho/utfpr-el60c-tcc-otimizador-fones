@@ -1,9 +1,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "utfprlogo.h"
+#include "stlogo.h"
 #include "usb_audio.h"
-#include "image_320x240_argb8888.h"
-#include "life_augmented_argb8888.h"
+#include "RGB565_240x130_1.h"
+#include "RGB565_240x130_2.h"
+//#include "image_320x240_argb8888.h"
+//#include "life_augmented_argb8888.h"
 /* Private typedef -----------------------------------------------------------*/
 extern LTDC_HandleTypeDef hltdc_discovery;
 static DMA2D_HandleTypeDef hdma2d;
@@ -28,6 +31,9 @@ static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 #define INVALID_AREA      0
 #define LEFT_AREA         1
 #define RIGHT_AREA        2
+
+#define WVGA_RES_X  800
+#define WVGA_RES_Y  480
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -35,16 +41,17 @@ USBD_HandleTypeDef USBD_Device;
 static int32_t pending_buffer = -1;
 static int32_t active_area = INVALID_AREA;
 static uint32_t ImageIndex = 0;
-static const uint32_t * Images[] =
-{
-	image_320x240_argb8888,
-	life_augmented_argb8888,
-};
+//static const uint32_t * Images[] =
+//{
+//	image_320x240_argb8888,
+//	life_augmented_argb8888,
+//};
 
 uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
 uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
 uint8_t pPage[]       = {0x00, 0x00, 0x01, 0xDF}; /*   0 -> 479 */
 uint8_t pSyncLeft[]   = {0x02, 0x15};             /* Scan @ 533 */
+static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 TIM_HandleTypeDef TimHandle;
@@ -631,7 +638,13 @@ static void Display_DemoDescription(void)
   BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A1", CENTER_MODE);
 
   /* Draw Bitmap */
-  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
+  //  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
+//    BSP_LCD_DrawBitmap(0, 0, (uint8_t *)utfprlogo);
+
+  CopyImageToLcdFrameBuffer((void*)&(utfprlogo[0]),
+                                              (void*)(LCD_FRAME_BUFFER),
+                                              LAYER_SIZE_X,
+                                              LAYER_SIZE_Y);
 
   BSP_LCD_SetFont(&Font12);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
@@ -645,6 +658,63 @@ static void Display_DemoDescription(void)
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD Inicial", CENTER_MODE);
 //  sprintf(desc,"%s example", "");
 //  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2 + 45, (uint8_t *)desc, CENTER_MODE);
+}
+
+/**
+  * @brief  Copy and convert image (LAYER_SIZE_X, LAYER_SIZE_Y) of format RGB565
+  * to LCD frame buffer area centered in WVGA resolution.
+  * The area of copy is of size (LAYER_SIZE_X, LAYER_SIZE_Y) in ARGB8888.
+  * @param  pSrc: Pointer to source buffer : source image buffer start here
+  * @param  pDst: Pointer to destination buffer LCD frame buffer center area start here
+  * @param  xSize: Buffer width (LAYER_SIZE_X here)
+  * @param  ySize: Buffer height (LAYER_SIZE_Y here)
+  * @retval LCD Status : LCD_OK or LCD_ERROR
+  */
+static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize)
+{
+  DMA2D_HandleTypeDef hdma2d_discovery;
+  HAL_StatusTypeDef hal_status = HAL_OK;
+  uint8_t lcd_status = LCD_ERROR;
+
+  /* Configure the DMA2D Mode, Color Mode and output offset */
+  hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
+  hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888; /* Output color out of PFC */
+  hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA;  /* No Output Alpha Inversion*/
+  hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;     /* No Output Red & Blue swap */
+
+  /* Output offset in pixels == nb of pixels to be added at end of line to come to the  */
+  /* first pixel of the next line : on the output side of the DMA2D computation         */
+  hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - LAYER_SIZE_X);
+
+  /* Foreground Configuration */
+  hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
+  hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; /* fully opaque */
+  hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
+  hdma2d_discovery.LayerCfg[1].InputOffset = 0;
+  hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; /* No ForeGround Red/Blue swap */
+  hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; /* No ForeGround Alpha inversion */
+
+  hdma2d_discovery.Instance = DMA2D;
+
+  /* DMA2D Initialization */
+  if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
+  {
+    if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
+    {
+      if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, (uint32_t)pDst, xSize, ySize) == HAL_OK)
+      {
+        /* Polling For DMA transfer */
+        hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
+        if(hal_status == HAL_OK)
+        {
+          /* return good status on exit */
+          lcd_status = LCD_OK;
+        }
+      }
+    }
+  }
+
+  return(lcd_status);
 }
 
 #ifdef  USE_FULL_ASSERT
