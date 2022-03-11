@@ -3,8 +3,7 @@
 #include "utfprlogo.h"
 #include "stlogo.h"
 #include "usb_audio.h"
-#include "RGB565_240x130_1.h"
-#include "RGB565_240x130_2.h"
+
 //#include "image_320x240_argb8888.h"
 //#include "life_augmented_argb8888.h"
 /* Private typedef -----------------------------------------------------------*/
@@ -51,7 +50,7 @@ uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
 uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
 uint8_t pPage[]       = {0x00, 0x00, 0x01, 0xDF}; /*   0 -> 479 */
 uint8_t pSyncLeft[]   = {0x02, 0x15};             /* Scan @ 533 */
-static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize);
+static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 TIM_HandleTypeDef TimHandle;
@@ -135,7 +134,7 @@ int main(void)
 //	LCD_BriefDisplay();
 //
 //	/* Show first image */
-//	CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
+	// CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
 //
 //	pending_buffer = 0;
 //	active_area = LEFT_AREA;
@@ -635,16 +634,21 @@ static void Display_DemoDescription(void)
 
   /* Display LCD messages */
   BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A1", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A2", CENTER_MODE);
 
   /* Draw Bitmap */
   //  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
 //    BSP_LCD_DrawBitmap(0, 0, (uint8_t *)utfprlogo);
 
-  CopyImageToLcdFrameBuffer((void*)&(utfprlogo[0]),
-                                              (void*)(LCD_FRAME_BUFFER),
-                                              LAYER_SIZE_X,
-                                              LAYER_SIZE_Y);
+  CopyImageToLcdFrameBuffer(
+		  (void*)&(utfprlogo[0]),
+		  (void*)(LCD_FRAME_BUFFER),
+		  UTFPR_LOGO_WIDTH,
+		  UTFPR_LOGO_HEIGHT,
+		  (WVGA_RES_X/2) - (UTFPR_LOGO_WIDTH/2),
+		  80);
+
+// CopyPicture((uint32_t *)utfprlogo, (uint32_t *)LAYER0_ADDRESS, 240, 160, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT);
 
   BSP_LCD_SetFont(&Font12);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
@@ -655,7 +659,7 @@ static void Display_DemoDescription(void)
   BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD Inicial", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD Inicial | Display de Imagens", CENTER_MODE);
 //  sprintf(desc,"%s example", "");
 //  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2 + 45, (uint8_t *)desc, CENTER_MODE);
 }
@@ -670,8 +674,10 @@ static void Display_DemoDescription(void)
   * @param  ySize: Buffer height (LAYER_SIZE_Y here)
   * @retval LCD Status : LCD_OK or LCD_ERROR
   */
-static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize)
+static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y)
 {
+
+  uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
   DMA2D_HandleTypeDef hdma2d_discovery;
   HAL_StatusTypeDef hal_status = HAL_OK;
   uint8_t lcd_status = LCD_ERROR;
@@ -684,7 +690,8 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
 
   /* Output offset in pixels == nb of pixels to be added at end of line to come to the  */
   /* first pixel of the next line : on the output side of the DMA2D computation         */
-  hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - LAYER_SIZE_X);
+  // TODO: GENERALIZE
+  hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
 
   /* Foreground Configuration */
   hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
@@ -701,7 +708,7 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
   {
     if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
     {
-      if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, (uint32_t)pDst, xSize, ySize) == HAL_OK)
+      if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
       {
         /* Polling For DMA transfer */
         hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
