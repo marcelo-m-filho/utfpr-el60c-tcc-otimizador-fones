@@ -29,6 +29,7 @@
 #include "usbd_audio_if.h"
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery_audio_ex.h"
+#include "stm32f769i_discovery_ts.h"
 
 #define ARGB8888_BYTE_PER_PIXEL  4
 #define RGB565_BYTE_PER_PIXEL    2
@@ -36,6 +37,20 @@
 #define LAYER_SIZE_X          240
 #define LAYER_SIZE_Y          130
 #define LAYER_BYTE_PER_PIXEL  RGB565_BYTE_PER_PIXEL
+
+#ifdef USE_FULL_ASSERT
+/* Assert activated */
+#define BSP_TEST_APPLI_ASSERT(__error_condition__)    do { if(__error_condition__) \
+                                                           {  while(1);  \
+                                                           } \
+                                                          } while(0)
+#else
+/* Assert not activated : macro has no effect */
+#define BSP_TEST_APPLI_ASSERT(__error_condition__)    do { if(__error_condition__) \
+                                                           {  ;  \
+                                                           } \
+                                                         } while(0)
+#endif /* USE_FULL_ASSERT */
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
