@@ -24,25 +24,29 @@
                 "${workspaceFolder}/Utilities/Fonts"
             ],
             "defines": [
+                "STM32F769xx",
+                "USE_STM32F769I_DISCO",
+                "USE_HAL_DRIVER",
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
-                "USE_HAL_DRIVER",
-                "STM32F769xx",
-                "USE_STM32F769I_DISCO",
-                "USE_IOEXPANDER",
                 "USE_USB_FS",
                 "USE_USB_FS_INTO_HS",
-                "USE_USB_AUDIO_PLAYBACK"
+                "USE_USB_AUDIO_PLAYBACK",
+                "USE_IOEXPANDER",
+                "__CC_ARM"
             ],
             "forcedInclude": [
                 "stdint.h",
                 "stdio.h",
-                "stdlib.h"
+                "stdlib.h",
+                "cstdint.h",
+                "inttypes.h",
+                "${workspaceFolder}/Application/User/Inc/vscode_defs.h"
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "windows-clang-arm64"
         }
     ],
     "version": 4

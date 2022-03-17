@@ -27,24 +27,18 @@ static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 
 #define LAYER0_ADDRESS  (LCD_FB_START_ADDRESS)
 
-#define INVALID_AREA      0
-#define LEFT_AREA         1
-#define RIGHT_AREA        2
-
-#define WVGA_RES_X  800
-#define WVGA_RES_Y  480
+#define INVALID_AREA    0
+#define LEFT_AREA       1
+#define RIGHT_AREA      2
+#define WVGA_RES_X      800
+#define WVGA_RES_Y      480
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
 USBD_HandleTypeDef USBD_Device;
-static int32_t pending_buffer = -1;
-static int32_t active_area = INVALID_AREA;
-static uint32_t ImageIndex = 0;
-//static const uint32_t * Images[] =
-//{
-//	image_320x240_argb8888,
-//	life_augmented_argb8888,
-//};
+static int32_t pending_buffer   = -1;
+static int32_t active_area      = INVALID_AREA;
+static uint32_t ImageIndex      = 0;
 
 uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
 uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
@@ -57,22 +51,18 @@ TIM_HandleTypeDef TimHandle;
 /* Prescaler declaration */
 uint32_t uwPrescalerValue = 0;
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
+
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Display_DemoDescription(void);
 static void OnError_Handler(uint32_t condition);
 static void CPU_CACHE_Enable(void);
-static uint8_t LCD_Init(void);
-void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
-void LTDC_Init(void);
+static void LCD_Init(void);
+static void USB_Init(void);
+void        LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
+void        LTDC_Init(void);
 static void LCD_BriefDisplay(void);
-static void CopyPicture(uint32_t *pSrc,
-                        uint32_t *pDst,
-                        uint16_t x,
-                        uint16_t y,
-                        uint16_t xsize,
-                        uint16_t ysize);
-
+static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x,uint16_t y, uint16_t xsize, uint16_t ysize);
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 static HAL_StatusTypeDef Timer_Init(void);
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
@@ -87,7 +77,6 @@ extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
  */
 int main(void)
 {
-	uint8_t lcd_status = LCD_OK;
 
 	// enables the CPU cache
 	CPU_CACHE_Enable();
@@ -98,70 +87,16 @@ int main(void)
 	     - Set NVIC Group Priority to 4
 	     - Low Level Initialization
 	 */
-	// TODO: validate if everything needed is here
 	HAL_Init();
 
-	/* Configure the System clock to have a frequency of 216 MHz */
+	// configures the system clock to have a frequency of 200 MHz
 	SystemClock_Config();
 
-	// initializes LEDs
 	BSP_LED_Init(LED1);
-
-	// initializes SDRAM
 	BSP_SDRAM_Init();
-
-	// initializes LCD
-	lcd_status = BSP_LCD_Init();
-	while(lcd_status != LCD_OK);
-
-	/* Initialize LTDC layer 0 iused for Hint */
-	LCD_LayertInit(0, LAYER0_ADDRESS);
-	BSP_LCD_SelectLayer(0);
-
-	BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
-
-	BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-	Display_DemoDescription();
-
+	LCD_Init();
+	USB_Init();
 	Touchscreen_demo1();
-
-//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_CASET, pColLeft);
-//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 4, OTM8009A_CMD_PASET, pPage);
-
-//	/* Update pitch : the draw is done on the whole physical X Size */
-//	HAL_LTDC_SetPitch(&hltdc_discovery, BSP_LCD_GetXSize(), 0);
-//
-//	/* Display example brief   */
-//	LCD_BriefDisplay();
-//
-//	/* Show first image */
-	// CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
-//
-//	pending_buffer = 0;
-//	active_area = LEFT_AREA;
-//
-//	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 2, OTM8009A_CMD_WRTESCN, pSyncLeft);
-//
-//	/* Send Display On DCS Command to display */
-//	HAL_DSI_ShortWrite(&(hdsi_discovery),
-//	                   0,
-//	                   DSI_DCS_SHORT_PKT_WRITE_P1,
-//	                   OTM8009A_CMD_DISPON,
-//	                   0x00);
-
-	// ----------- USB Device Initialization -----------
-	/* Init Device Library */
-	USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
-
-	/* Add Supported Class */
-	USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
-
-	/* Add Interface callbacks for AUDIO Class */
-	USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
-
-	/* Start Device Process */
-	USBD_Start(&USBD_Device);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 	/* Configure timer for volume control handling */
@@ -169,23 +104,7 @@ int main(void)
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 
 	/* Infinite loop */
-	while (1)
-	{
-		// if(pending_buffer < 0)
-		// {
-		// 	CopyPicture((uint32_t *)Images[ImageIndex++], (uint32_t *)LAYER0_ADDRESS, 240, 160, 320, 240);
-
-		// 	if(ImageIndex >= 2)
-		// 	{
-		// 		ImageIndex = 0;
-		// 	}
-		// 	pending_buffer = 1;
-
-		// 	HAL_DSI_LongWrite(&hdsi_discovery, 0, DSI_DCS_LONG_PKT_WRITE, 2, OTM8009A_CMD_WRTESCN, pSyncLeft);
-		// }
-		// /* Wait some time before switching to next image */
-		// HAL_Delay(2000);
-	}
+	while (1);
 }
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
@@ -339,10 +258,7 @@ static void OnError_Handler(uint32_t condition)
 	if(condition)
 	{
 		BSP_LED_On(LED1);
-		while(1)
-		{
-			;
-		}  /* Blocking on error */
+		while(1); // blocking on error
 	}
 }
 
@@ -370,119 +286,37 @@ static void CPU_CACHE_Enable(void)
  * @param  None
  * @retval LCD state
  */
-static uint8_t LCD_Init(void)
+static void LCD_Init(void)
 {
-	DSI_PHY_TimerTypeDef PhyTimings;
+	uint8_t lcd_status = LCD_OK;
 
-	/* Toggle Hardware Reset of the DSI LCD using
-	 * its XRES signal (active low) */
-	BSP_LCD_Reset();
+	lcd_status = BSP_LCD_Init();
+	while(lcd_status != LCD_OK);
 
-	/* Call first MSP Initialize only in case of first initialization
-	 * This will set IP blocks LTDC, DSI and DMA2D
-	 * - out of reset
-	 * - clocked
-	 * - NVIC IRQ related to IP blocks enabled
-	 */
-	BSP_LCD_MspInit();
+	/* Initialize LTDC layer 0 iused for Hint */
+	LCD_LayertInit(0, LAYER0_ADDRESS);
+	BSP_LCD_SelectLayer(0);
 
-	/* LCD clock configuration */
-	/* PLLSAI_VCO Input = HSE_VALUE/PLL_M = 1 Mhz */
-	/* PLLSAI_VCO Output = PLLSAI_VCO Input * PLLSAIN = 417 Mhz */
-	/* PLLLCDCLK = PLLSAI_VCO Output/PLLSAIR = 417 MHz / 5 = 83.4 MHz */
-	/* LTDC clock frequency = PLLLCDCLK / LTDC_PLLSAI_DIVR_2 = 83.4 / 2 = 41.7 MHz */
-	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
-	PeriphClkInitStruct.PLLSAI.PLLSAIN = 417;
-	PeriphClkInitStruct.PLLSAI.PLLSAIR = 5;
-	PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_2;
-	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+	BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
 
-	/* Base address of DSI Host/Wrapper registers to be set before calling De-Init */
-	hdsi_discovery.Instance = DSI;
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-	HAL_DSI_DeInit(&(hdsi_discovery));
+	Display_DemoDescription();
+}
 
-	dsiPllInit.PLLNDIV  = 100;
-	dsiPllInit.PLLIDF   = DSI_PLL_IN_DIV5;
-	dsiPllInit.PLLODF  = DSI_PLL_OUT_DIV1;
+static void USB_Init(void)
+{
+	/* Init Device Library */
+	USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
 
-	hdsi_discovery.Init.NumberOfLanes = DSI_TWO_DATA_LANES;
-	hdsi_discovery.Init.TXEscapeCkdiv = 0x4;
-	HAL_DSI_Init(&(hdsi_discovery), &(dsiPllInit));
+	/* Add Supported Class */
+	USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
 
-	/* Configure the DSI for Command mode */
-	CmdCfg.VirtualChannelID      = 0;
-	CmdCfg.HSPolarity            = DSI_HSYNC_ACTIVE_HIGH;
-	CmdCfg.VSPolarity            = DSI_VSYNC_ACTIVE_HIGH;
-	CmdCfg.DEPolarity            = DSI_DATA_ENABLE_ACTIVE_HIGH;
-	CmdCfg.ColorCoding           = DSI_RGB888;
-	CmdCfg.CommandSize           = HACT;
-	CmdCfg.TearingEffectSource   = DSI_TE_DSILINK;
-	CmdCfg.TearingEffectPolarity = DSI_TE_RISING_EDGE;
-	CmdCfg.VSyncPol              = DSI_VSYNC_FALLING;
-	CmdCfg.AutomaticRefresh      = DSI_AR_ENABLE;
-	CmdCfg.TEAcknowledgeRequest  = DSI_TE_ACKNOWLEDGE_ENABLE;
-	HAL_DSI_ConfigAdaptedCommandMode(&hdsi_discovery, &CmdCfg);
+	/* Add Interface callbacks for AUDIO Class */
+	USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
 
-	LPCmd.LPGenShortWriteNoP    = DSI_LP_GSW0P_ENABLE;
-	LPCmd.LPGenShortWriteOneP   = DSI_LP_GSW1P_ENABLE;
-	LPCmd.LPGenShortWriteTwoP   = DSI_LP_GSW2P_ENABLE;
-	LPCmd.LPGenShortReadNoP     = DSI_LP_GSR0P_ENABLE;
-	LPCmd.LPGenShortReadOneP    = DSI_LP_GSR1P_ENABLE;
-	LPCmd.LPGenShortReadTwoP    = DSI_LP_GSR2P_ENABLE;
-	LPCmd.LPGenLongWrite        = DSI_LP_GLW_ENABLE;
-	LPCmd.LPDcsShortWriteNoP    = DSI_LP_DSW0P_ENABLE;
-	LPCmd.LPDcsShortWriteOneP   = DSI_LP_DSW1P_ENABLE;
-	LPCmd.LPDcsShortReadNoP     = DSI_LP_DSR0P_ENABLE;
-	LPCmd.LPDcsLongWrite        = DSI_LP_DLW_ENABLE;
-	HAL_DSI_ConfigCommand(&hdsi_discovery, &LPCmd);
-
-	/* Initialize LTDC */
-	LTDC_Init();
-
-	/* Start DSI */
-	HAL_DSI_Start(&(hdsi_discovery));
-
-	/* Configure DSI PHY HS2LP and LP2HS timings */
-	PhyTimings.ClockLaneHS2LPTime = 35;
-	PhyTimings.ClockLaneLP2HSTime = 35;
-	PhyTimings.DataLaneHS2LPTime = 35;
-	PhyTimings.DataLaneLP2HSTime = 35;
-	PhyTimings.DataLaneMaxReadTime = 0;
-	PhyTimings.StopWaitTime = 10;
-	HAL_DSI_ConfigPhyTimer(&hdsi_discovery, &PhyTimings);
-
-	/* Initialize the OTM8009A LCD Display IC Driver (KoD LCD IC Driver)*/
-	OTM8009A_Init(OTM8009A_COLMOD_RGB888, LCD_ORIENTATION_LANDSCAPE);
-
-	/* Reconfigure the DSI for HS Command mode */
-	LPCmd.LPGenShortWriteNoP    = DSI_LP_GSW0P_DISABLE;
-	LPCmd.LPGenShortWriteOneP   = DSI_LP_GSW1P_DISABLE;
-	LPCmd.LPGenShortWriteTwoP   = DSI_LP_GSW2P_DISABLE;
-	LPCmd.LPGenShortReadNoP     = DSI_LP_GSR0P_DISABLE;
-	LPCmd.LPGenShortReadOneP    = DSI_LP_GSR1P_DISABLE;
-	LPCmd.LPGenShortReadTwoP    = DSI_LP_GSR2P_DISABLE;
-	LPCmd.LPGenLongWrite        = DSI_LP_GLW_DISABLE;
-	LPCmd.LPDcsShortWriteNoP    = DSI_LP_DSW0P_DISABLE;
-	LPCmd.LPDcsShortWriteOneP   = DSI_LP_DSW1P_DISABLE;
-	LPCmd.LPDcsShortReadNoP     = DSI_LP_DSR0P_DISABLE;
-	LPCmd.LPDcsLongWrite        = DSI_LP_DLW_DISABLE;
-	HAL_DSI_ConfigCommand(&hdsi_discovery, &LPCmd);
-
-	// TODO: USB Audio breaks due to this line
-	HAL_DSI_ConfigFlowControl(&hdsi_discovery, DSI_FLOW_CONTROL_BTA);
-
-	/* Send Display Off DCS Command to display */
-	HAL_DSI_ShortWrite(&(hdsi_discovery),
-	                   0,
-	                   DSI_DCS_SHORT_PKT_WRITE_P1,
-	                   OTM8009A_CMD_DISPOFF,
-	                   0x00);
-
-	/* Refresh the display */
-	HAL_DSI_Refresh(&hdsi_discovery);
-
-	return LCD_OK;
+	/* Start Device Process */
+	USBD_Start(&USBD_Device);
 }
 
 /**
@@ -620,110 +454,110 @@ static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x, uint16_t y, 
 
 static void Display_DemoDescription(void)
 {
-  char desc[50];
+	char desc[50];
 
-  /* Set LCD Foreground Layer  */
-  BSP_LCD_SelectLayer(0);
+	/* Set LCD Foreground Layer  */
+	BSP_LCD_SelectLayer(0);
 
-  BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
+	BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
 
-  /* Clear the LCD */
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-  BSP_LCD_Clear(LCD_COLOR_WHITE);
+	/* Clear the LCD */
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-  /* Set the LCD Text Color */
-  BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
+	/* Set the LCD Text Color */
+	BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
 
-  /* Display LCD messages */
-  BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A2", CENTER_MODE);
+	/* Display LCD messages */
+	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A3", CENTER_MODE);
 
-  /* Draw Bitmap */
-  //  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
+	/* Draw Bitmap */
+	//  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
 //    BSP_LCD_DrawBitmap(0, 0, (uint8_t *)utfprlogo);
 
-  CopyImageToLcdFrameBuffer(
-		  (void*)&(utfprlogo[0]),
-		  (void*)(LCD_FRAME_BUFFER),
-		  UTFPR_LOGO_WIDTH,
-		  UTFPR_LOGO_HEIGHT,
-		  (WVGA_RES_X/2) - (UTFPR_LOGO_WIDTH/2),
-		  80);
+	CopyImageToLcdFrameBuffer(
+		(void*)&(utfprlogo[0]),
+		(void*)(LCD_FRAME_BUFFER),
+		UTFPR_LOGO_WIDTH,
+		UTFPR_LOGO_HEIGHT,
+		(WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2),
+		80);
 
 // CopyPicture((uint32_t *)utfprlogo, (uint32_t *)LAYER0_ADDRESS, 240, 160, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT);
 
-  BSP_LCD_SetFont(&Font12);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
+	BSP_LCD_SetFont(&Font12);
+	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
 
-  BSP_LCD_SetFont(&Font24);
-  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-  BSP_LCD_FillRect(0, BSP_LCD_GetYSize()/2 + 15, BSP_LCD_GetXSize(), 90);
-  BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD Inicial | Display de Imagens", CENTER_MODE);
+	BSP_LCD_SetFont(&Font24);
+	BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+	BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
+	BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Imagens | Touch Inicial", CENTER_MODE);
 //  sprintf(desc,"%s example", "");
 //  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2 + 45, (uint8_t *)desc, CENTER_MODE);
 }
 
 /**
-  * @brief  Copy and convert image (LAYER_SIZE_X, LAYER_SIZE_Y) of format RGB565
-  * to LCD frame buffer area centered in WVGA resolution.
-  * The area of copy is of size (LAYER_SIZE_X, LAYER_SIZE_Y) in ARGB8888.
-  * @param  pSrc: Pointer to source buffer : source image buffer start here
-  * @param  pDst: Pointer to destination buffer LCD frame buffer center area start here
-  * @param  xSize: Buffer width (LAYER_SIZE_X here)
-  * @param  ySize: Buffer height (LAYER_SIZE_Y here)
-  * @retval LCD Status : LCD_OK or LCD_ERROR
-  */
+ * @brief  Copy and convert image (LAYER_SIZE_X, LAYER_SIZE_Y) of format RGB565
+ * to LCD frame buffer area centered in WVGA resolution.
+ * The area of copy is of size (LAYER_SIZE_X, LAYER_SIZE_Y) in ARGB8888.
+ * @param  pSrc: Pointer to source buffer : source image buffer start here
+ * @param  pDst: Pointer to destination buffer LCD frame buffer center area start here
+ * @param  xSize: Buffer width (LAYER_SIZE_X here)
+ * @param  ySize: Buffer height (LAYER_SIZE_Y here)
+ * @retval LCD Status : LCD_OK or LCD_ERROR
+ */
 static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y)
 {
 
-  uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
-  DMA2D_HandleTypeDef hdma2d_discovery;
-  HAL_StatusTypeDef hal_status = HAL_OK;
-  uint8_t lcd_status = LCD_ERROR;
+	uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
+	DMA2D_HandleTypeDef hdma2d_discovery;
+	HAL_StatusTypeDef hal_status = HAL_OK;
+	uint8_t lcd_status = LCD_ERROR;
 
-  /* Configure the DMA2D Mode, Color Mode and output offset */
-  hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
-  hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888; /* Output color out of PFC */
-  hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA;  /* No Output Alpha Inversion*/
-  hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;     /* No Output Red & Blue swap */
+	/* Configure the DMA2D Mode, Color Mode and output offset */
+	hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
+	hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;/* Output color out of PFC */
+	hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; /* No Output Alpha Inversion*/
+	hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;/* No Output Red & Blue swap */
 
-  /* Output offset in pixels == nb of pixels to be added at end of line to come to the  */
-  /* first pixel of the next line : on the output side of the DMA2D computation         */
-  // TODO: GENERALIZE
-  hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
+	/* Output offset in pixels == nb of pixels to be added at end of line to come to the  */
+	/* first pixel of the next line : on the output side of the DMA2D computation         */
+	// TODO: GENERALIZE
+	hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
 
-  /* Foreground Configuration */
-  hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-  hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; /* fully opaque */
-  hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
-  hdma2d_discovery.LayerCfg[1].InputOffset = 0;
-  hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; /* No ForeGround Red/Blue swap */
-  hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; /* No ForeGround Alpha inversion */
+	/* Foreground Configuration */
+	hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
+	hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; /* fully opaque */
+	hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
+	hdma2d_discovery.LayerCfg[1].InputOffset = 0;
+	hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; /* No ForeGround Red/Blue swap */
+	hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; /* No ForeGround Alpha inversion */
 
-  hdma2d_discovery.Instance = DMA2D;
+	hdma2d_discovery.Instance = DMA2D;
 
-  /* DMA2D Initialization */
-  if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
-  {
-    if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
-    {
-      if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
-      {
-        /* Polling For DMA transfer */
-        hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
-        if(hal_status == HAL_OK)
-        {
-          /* return good status on exit */
-          lcd_status = LCD_OK;
-        }
-      }
-    }
-  }
+	/* DMA2D Initialization */
+	if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
+	{
+		if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
+		{
+			if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
+			{
+				/* Polling For DMA transfer */
+				hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
+				if(hal_status == HAL_OK)
+				{
+					/* return good status on exit */
+					lcd_status = LCD_OK;
+				}
+			}
+		}
+	}
 
-  return(lcd_status);
+	return(lcd_status);
 }
 
 #ifdef  USE_FULL_ASSERT
