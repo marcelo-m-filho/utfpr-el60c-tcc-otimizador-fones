@@ -885,20 +885,17 @@ static uint8_t  USBD_AUDIO_DataOut (USBD_HandleTypeDef *pdev,
     /* get received length */
     packet_length = USBD_LL_GetRxDataSize(pdev, epnum);
     /* inform user about data reception  */
-    ep->ep_description.data_ep->DataReceived(packet_length,ep->ep_description.data_ep->private_data);
+    ep->ep_description.data_ep->DataReceived(packet_length, ep->ep_description.data_ep->private_data);
      
     /* get buffer to receive new packet */  
-    pbuf=  ep->ep_description.data_ep->GetBuffer(ep->ep_description.data_ep->private_data,&packet_length);                               
+    pbuf = ep->ep_description.data_ep->GetBuffer(ep->ep_description.data_ep->private_data,&packet_length);                               
     /* Prepare Out endpoint to receive next audio packet */
-     USBD_LL_PrepareReceive(pdev,
-                            epnum,
-                            pbuf,
-                            packet_length);
-    }
-    else
-    {
-      USBD_error_handler();
-    }
+    USBD_LL_PrepareReceive(pdev, epnum, pbuf, packet_length);
+  }
+  else
+  {
+    USBD_error_handler();
+  }
     
   
     return USBD_OK;

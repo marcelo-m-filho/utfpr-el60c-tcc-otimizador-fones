@@ -59,6 +59,7 @@ static uint32_t Touchscreen_Handle_NewTouch(void);
 
 /* Private functions ---------------------------------------------------------*/
 
+extern uint32_t xDebug[10];
 /**
  * @brief  Touchscreen Demo1 : test touchscreen calibration and single touch in polling mode
  * @param  None
@@ -85,6 +86,10 @@ void Touchscreen_demo1(void)
 
 		while (exitTsUseCase == 0)
 		{
+			char desc[50];
+			sprintf(desc,"%05i|%05i|%05i|%05i|%05i", xDebug[0], xDebug[1], xDebug[2], xDebug[3], xDebug[4]);
+			BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2, (uint8_t *)desc, CENTER_MODE);
+
 			if (ts_status == TS_OK)
 			{
 				/* Check in polling mode in touch screen the touch status and coordinates */

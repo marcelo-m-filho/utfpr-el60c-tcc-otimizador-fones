@@ -107,8 +107,7 @@ static  int AUDIO_SpeakerDebugStats_count =0;
   * @param  node_handle(IN):      speaker node handle must be allocated
   * @retval 0 if no error
   */
- int8_t  AUDIO_SpeakerInit(AUDIO_Description_t* audio_description,  AUDIO_Session_t* session_handle, 
-                           uint32_t node_handle)
+ int8_t  AUDIO_SpeakerInit(AUDIO_Description_t* audio_description, AUDIO_Session_t* session_handle, uint32_t node_handle)
 {
   AUDIO_SpeakerNode_t* speaker;
   
@@ -173,6 +172,7 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void)
      AUDIO_SpeakerHandler->specific.cmd = 0;
      return ;
    }
+
    if(AUDIO_SpeakerHandler->specific.cmd&SPEAKER_CMD_CHANGE_FREQUENCE)
    {
      AUDIO_SpeakerHandler->node.state = AUDIO_NODE_STOPPED;
@@ -186,15 +186,16 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void)
 #endif /*USE_AUDIO_TIMER_VOLUME_CTRL*/
      AUDIO_SpeakerHandler->specific.cmd = 0;
    }
-  if(AUDIO_SpeakerHandler->specific.cmd&SPEAKER_CMD_STOP)
-  {
-    AUDIO_SpeakerHandler->specific.data      = AUDIO_SpeakerHandler->specific.alt_buffer;
-    AUDIO_SpeakerHandler->specific.data_size = AUDIO_SpeakerHandler->specific.injection_size;
-    AUDIO_SpeakerHandler->specific.offset    = 0;
-    memset(AUDIO_SpeakerHandler->specific.data,0,AUDIO_SpeakerHandler->specific.data_size);
-    AUDIO_SpeakerHandler->node.state = AUDIO_NODE_STOPPED;
-    AUDIO_SpeakerHandler->specific.cmd       ^= SPEAKER_CMD_STOP;
-  }
+   
+    if(AUDIO_SpeakerHandler->specific.cmd&SPEAKER_CMD_STOP)
+    {
+      AUDIO_SpeakerHandler->specific.data      = AUDIO_SpeakerHandler->specific.alt_buffer;
+      AUDIO_SpeakerHandler->specific.data_size = AUDIO_SpeakerHandler->specific.injection_size;
+      AUDIO_SpeakerHandler->specific.offset    = 0;
+      memset(AUDIO_SpeakerHandler->specific.data,0,AUDIO_SpeakerHandler->specific.data_size);
+      AUDIO_SpeakerHandler->node.state = AUDIO_NODE_STOPPED;
+      AUDIO_SpeakerHandler->specific.cmd       ^= SPEAKER_CMD_STOP;
+    }
     /* inject current data */
     BSP_AUDIO_OUT_ChangeBuffer((uint16_t*)AUDIO_SpeakerHandler->specific.data, (uint16_t)AUDIO_SpeakerHandler->specific.data_size); 
     /* if speaker was started prepare next data */
@@ -338,8 +339,8 @@ static int8_t  AUDIO_SpeakerStart(AUDIO_CircularBuffer_t* buffer,  uint32_t node
   speaker = (AUDIO_SpeakerNode_t*)node_handle;
   speaker->buf = buffer;
   speaker->specific.cmd = 0;
-  AUDIO_SpeakerMute( 0,  speaker->node.audio_description->audio_mute , node_handle);
-  AUDIO_SpeakerSetVolume( 0,  speaker->node.audio_description->audio_volume_db_256 , node_handle);
+  AUDIO_SpeakerMute(0, speaker->node.audio_description->audio_mute, node_handle);
+  AUDIO_SpeakerSetVolume(0, speaker->node.audio_description->audio_volume_db_256, node_handle);
   speaker->node.state = AUDIO_NODE_STARTED;
   return 0;
 }

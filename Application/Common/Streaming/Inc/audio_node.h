@@ -33,10 +33,10 @@
 /*brief  Main audio buffer structure */
 typedef struct
 {
-  uint8_t*                   data; /* pointer to circular buffer data */
-  uint16_t                   rd_ptr;  /* circular buffer reading offset */
-  uint16_t                   wr_ptr;   /* circular buffer writing offset */
-  uint16_t                   size;   /* The size of buffer segment where samples may be read or written. It is equal or less than the real size of the buffer  */
+  uint8_t*                   data;    // pointer to circular buffer data
+  uint16_t                   rd_ptr;  // circular buffer reading offset
+  uint16_t                   wr_ptr;  // circular buffer writing offset
+  uint16_t                   size;    // The size of buffer segment where samples may be read or written. It is equal or less than the real size of the buffer  */
 }
 AUDIO_CircularBuffer_t;
 

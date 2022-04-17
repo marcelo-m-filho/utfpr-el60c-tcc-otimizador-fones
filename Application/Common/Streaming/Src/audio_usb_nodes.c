@@ -21,6 +21,9 @@
 #include "usb_audio.h"
 #include "audio_usb_nodes.h"
 
+extern uint32_t xDebug[10];
+
+
 /* External variables --------------------------------------------------------*/
 /* Private macros ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -345,6 +348,8 @@ static int8_t  USB_AudioStreamingInputOutputRestart( uint32_t node_handle)
   return 0;
 }
 
+uint32_t samples = 0;
+uint8_t shouldMute = 0;
 #if USE_USB_AUDIO_PLAYBACK
 /**
   * @brief  USB_AudioStreamingInputDataReceived
@@ -355,29 +360,72 @@ static int8_t  USB_AudioStreamingInputOutputRestart( uint32_t node_handle)
   */
 static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t node_handle)
  {
-   AUDIO_USBInputOutputNode_t * input_node;
-   AUDIO_CircularBuffer_t *buf;
-   uint16_t buffer_data_count;
+   AUDIO_USBInputOutputNode_t *input_node;
+   AUDIO_CircularBuffer_t     *buf;
+   uint16_t                   buffer_data_count;
+   
+
    
    input_node = (AUDIO_USBInputOutputNode_t *)node_handle;
    if(input_node->node.state == AUDIO_NODE_STARTED)
    {
-     /* @TODO add overrun detection */
-     if(input_node->flags&AUDIO_IO_RESTART_REQUIRED)
-     { 
-     /* When restart is required ignore the packet and reset buffer */
-       input_node->flags = 0;
-       input_node->buf->rd_ptr=input_node->buf->wr_ptr = 0;
-       return 0;
-     }
-     
-     buf=input_node->buf;
-     buf->wr_ptr += data_len;/* increment buffer */
+      /* @TODO add overrun detection */
+      if(input_node->flags & AUDIO_IO_RESTART_REQUIRED)
+      {
+        // when restart is required, ignore the packet and reset buffer
+        input_node->flags = 0;
+        input_node->buf->rd_ptr = input_node->buf->wr_ptr = 0;
+        return 0;
+      }
 
-     if((input_node->flags&AUDIO_IO_BEGIN_OF_STREAM) == 0)
+      if(samples > 48000)
+      {
+        shouldMute = !shouldMute;
+        samples = 0;
+      }
+
+      buf = input_node->buf;
+
+      uint16_t *frameBuffer =  ((uint16_t*)(buf->data + buf->wr_ptr));
+
+//      for(int i = 0; i < 96; i++)
+//      {
+//
+//    	  if(i % 2 == 0)
+//    		  frameBuffer[i] = frameBuffer[i] * 2;
+//    	  else
+//              frameBuffer[i] = frameBuffer[i] / 2;
+//
+//      }
+
+
+       if(shouldMute)
+       {
+         for(int i = 0; i < data_len; i++)
+         {
+             buf->data[buf->wr_ptr + i] = 0;
+         }
+       }
+
+
+      xDebug[0] = data_len;
+      xDebug[1] = buf->data[buf->wr_ptr];
+//       for(int i = 0; i < data_len; i++)
+//       {
+// //         if((i % 2) == 0)
+//           buf->data[buf->wr_ptr + i] = buf->data[buf->wr_ptr + i] * 2;
+//       }
+
+      // uint8_t* location = buf->data + buf->wr_ptr;
+      // uint8_t* location2 = buf->data + buf->wr_ptr - 1;
+      // *location2 = 0;
+      // *location = 0;
+      buf->wr_ptr += data_len; // increments buffer
+      samples += data_len;
+
+     if((input_node->flags & AUDIO_IO_BEGIN_OF_STREAM) == 0)
      { /* this is the first packet */
-       input_node->node.session_handle->SessionCallback(AUDIO_BEGIN_OF_STREAM,(AUDIO_Node_t*)input_node,
-                                                        input_node->node.session_handle);   /* send event to mother session */
+       input_node->node.session_handle->SessionCallback(AUDIO_BEGIN_OF_STREAM,(AUDIO_Node_t*)input_node, input_node->node.session_handle);   /* send event to mother session */
        input_node->flags |= AUDIO_IO_BEGIN_OF_STREAM;
      }
      else
@@ -393,25 +441,27 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
       {
         buf->wr_ptr = 0;
       }
-      if(((input_node->flags&AUDIO_IO_THRESHOLD_REACHED) == 0)&&
-          (buffer_data_count >= input_node->specific.input.threshold))
+
+      if(((input_node->flags&AUDIO_IO_THRESHOLD_REACHED) == 0) && (buffer_data_count >= input_node->specific.input.threshold))
       {  
-         input_node->node.session_handle->SessionCallback(AUDIO_THRESHOLD_REACHED, (AUDIO_Node_t*)input_node,
-                                                         input_node->node.session_handle);   /* inform session that the buffer threshold is reached */
+
+          // informs session that the buffer threshold is reached 
+          input_node->node.session_handle->SessionCallback(AUDIO_THRESHOLD_REACHED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);   
           input_node->flags |= AUDIO_IO_THRESHOLD_REACHED ;
        }
        else
        {
-        input_node->node.session_handle->SessionCallback(AUDIO_PACKET_RECEIVED, (AUDIO_Node_t*)input_node,
-                                                         input_node->node.session_handle); /* inform session that a packet is received */
+        // informs session that a packet is received
+        input_node->node.session_handle->SessionCallback(AUDIO_PACKET_RECEIVED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);
        }
      }
     }
-   else
-   {
-     Error_Handler();
-   }
-   return 0;
+    else
+    {
+      Error_Handler();
+    }
+
+    return 0;
  }
 
 /**

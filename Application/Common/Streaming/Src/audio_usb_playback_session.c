@@ -23,6 +23,8 @@
 #include "audio_speaker_node.h"
 #include "audio_sessions_usb.h"
 
+extern uint32_t xDebug[10];
+
 #if USE_USB_AUDIO_PLAYBACK
 /* Private defines -----------------------------------------------------------*/
 #define AUDIO_USB_PLAYBACK_ALTERNATE 0x01
@@ -278,21 +280,24 @@ static int8_t  USB_AudioPlaybackSessionExternalControl( AUDIO_ControlCommand_t c
   * @param  session_handle: playback session
   * @retval  : 0 if no error
   */
-static int8_t  USB_AudioPlaybackSessionCallback(AUDIO_SessionEvent_t  event, 
-                                               AUDIO_Node_t* node, 
-                                               struct    AUDIO_Session* session_handle)
+static int8_t  USB_AudioPlaybackSessionCallback(AUDIO_SessionEvent_t  event, AUDIO_Node_t* node, struct    AUDIO_Session* session_handle)
 {
   AUDIO_USBSession_t * play_session = (AUDIO_USBSession_t *)session_handle;
   
+
+  // xDebug[0] = play_session->buffer.data[0];
+  // xDebug[1] = play_session->buffer.rd_ptr;
+  // xDebug[2] = play_session->buffer.wr_ptr;
+  // xDebug[3] = play_session->buffer.size;
   switch(event)
   {
-  case AUDIO_THRESHOLD_REACHED:  /*  the buffer fill threshold is reached, then playback starts the speaker to consume data */
+  case AUDIO_THRESHOLD_REACHED:  // the buffer fill threshold is reached, then playback starts the speaker to consume data
     
-    if(node->type  ==  AUDIO_INPUT)
+    if(node->type == AUDIO_INPUT)
     {
-      PlaybackSpeakerOutputNode.SpeakerStart(& play_session->buffer, (uint32_t)&PlaybackSpeakerOutputNode);
+      PlaybackSpeakerOutputNode.SpeakerStart(&play_session->buffer, (uint32_t)&PlaybackSpeakerOutputNode);
 #if USE_AUDIO_PLAYBACK_USB_FEEDBACK
-	  PlaybackSynchroFirstSofReceived =0;   /* restart synchronization*/
+	  PlaybackSynchroFirstSofReceived = 0;   // restart synchronization
 #endif  /* USE_AUDIO_PLAYBACK_USB_FEEDBACK */
     }
     break;
@@ -301,13 +306,12 @@ static int8_t  USB_AudioPlaybackSessionCallback(AUDIO_SessionEvent_t  event,
     break;
   case AUDIO_FREQUENCY_CHANGED: 
     {
-      /* recompute the buffer size */
+     // recomputes the buffer size
      PlaybackSpeakerOutputNode.SpeakerChangeFrequency((uint32_t)&PlaybackSpeakerOutputNode);
-     uint16_t buffer_margin = (PlaybackUSBInputNode.max_packet_length > PlaybackUSBInputNode.packet_length)? PlaybackUSBInputNode.max_packet_length:0;
-  USB_AudioStreamingInitializeDataBuffer(&play_session->buffer, USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE,
-                                  AUDIO_MS_PACKET_SIZE_FROM_AUD_DESC(&PlaybackAudioDescription) , buffer_margin);
+     uint16_t buffer_margin = (PlaybackUSBInputNode.max_packet_length > PlaybackUSBInputNode.packet_length) ? PlaybackUSBInputNode.max_packet_length : 0;
+  USB_AudioStreamingInitializeDataBuffer(&play_session->buffer, USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE, AUDIO_MS_PACKET_SIZE_FROM_AUD_DESC(&PlaybackAudioDescription), buffer_margin);
 #if USE_AUDIO_PLAYBACK_USB_FEEDBACK
-     PlaybackSynchroFirstSofReceived =0;
+     PlaybackSynchroFirstSofReceived = 0;
      PlaybackSynchroEstimatedCodecFrequency = 0;
 #endif  /* USE_AUDIO_PLAYBACK_USB_FEEDBACK */   
     break;

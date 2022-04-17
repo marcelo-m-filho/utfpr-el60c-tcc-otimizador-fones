@@ -68,6 +68,7 @@ static HAL_StatusTypeDef Timer_Init(void);
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 /* externals  variables -----------------------------------------------*/
 extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
+uint32_t xDebug[0];
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -454,7 +455,6 @@ static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x, uint16_t y, 
 
 static void Display_DemoDescription(void)
 {
-	char desc[50];
 
 	/* Set LCD Foreground Layer  */
 	BSP_LCD_SelectLayer(0);
@@ -496,8 +496,7 @@ static void Display_DemoDescription(void)
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Imagens | Touch Inicial", CENTER_MODE);
-//  sprintf(desc,"%s example", "");
-//  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2 + 45, (uint8_t *)desc, CENTER_MODE);
+
 }
 
 /**
