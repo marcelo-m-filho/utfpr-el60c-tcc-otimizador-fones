@@ -14,6 +14,7 @@ DSI_VidCfgTypeDef hdsivideo_handle;
 DSI_CmdCfgTypeDef CmdCfg;
 DSI_LPCmdTypeDef LPCmd;
 DSI_PLLInitTypeDef dsiPllInit;
+
 static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 /* Private define ------------------------------------------------------------*/
 #define VSYNC           1
@@ -39,6 +40,10 @@ USBD_HandleTypeDef USBD_Device;
 static int32_t pending_buffer   = -1;
 static int32_t active_area      = INVALID_AREA;
 static uint32_t ImageIndex      = 0;
+uint32_t watchdogTimer          = 20000;
+uint32_t watchdogCounter        = 362;
+bool shouldPrintSamples         = false;
+
 
 uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
 uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
@@ -59,16 +64,18 @@ static void OnError_Handler(uint32_t condition);
 static void CPU_CACHE_Enable(void);
 static void LCD_Init(void);
 static void USB_Init(void);
+void 		LCD_UpdateWatchdog(void);
 void        LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 void        LTDC_Init(void);
 static void LCD_BriefDisplay(void);
+void		LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
 static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x,uint16_t y, uint16_t xsize, uint16_t ysize);
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 static HAL_StatusTypeDef Timer_Init(void);
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 /* externals  variables -----------------------------------------------*/
 extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
-uint32_t xDebug[0];
+uint32_t xDebug[40];
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -97,7 +104,9 @@ int main(void)
 	BSP_SDRAM_Init();
 	LCD_Init();
 	USB_Init();
-	Touchscreen_demo1();
+	Touchscreen_Init();
+//	Touchscreen_demo1();
+
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 	/* Configure timer for volume control handling */
@@ -105,7 +114,22 @@ int main(void)
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 
 	/* Infinite loop */
-	while (1);
+	while (1)
+	{
+		Touchscreen_ButtonHandler();
+
+		if(shouldPrintSamples)
+		{
+			LCD_PrintDebugVariable(10, true);
+			shouldPrintSamples = false;
+		}
+
+		if(++watchdogTimer > 10)
+		{
+			LCD_UpdateWatchdog();
+			watchdogTimer = 0;
+		}
+	}
 }
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
@@ -305,6 +329,56 @@ static void LCD_Init(void)
 	Display_DemoDescription();
 }
 
+void LCD_UpdateWatchdog (void)
+{
+
+	uint8_t text[5];
+	sprintf(text, "%04i", watchdogCounter);
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
+	// BSP_LCD_DisplayStringAt(50, 10, (uint8_t *)"OIEEE", CENTER_MODE);
+	watchdogCounter++;
+	if(watchdogCounter > 9999)
+		watchdogCounter = 0;
+}
+
+void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
+{
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+
+	for(uint8_t position = 0; position < columns; position++)
+	{
+		uint32_t yOffset = 100 + 18 * position;
+		char desc[200];
+
+		if(printAsShort)
+		{
+			sprintf(
+				desc,
+				"%06i|%06i",
+				((int16_t)xDebug[2 * position + 0]),
+				((int16_t)xDebug[2 * position + 1])
+				);
+		}
+		else
+		{
+			sprintf(
+				desc,
+				"%04i|%04i|%04i|%04i",
+				((int8_t)xDebug[4 * position + 0]),
+				((int8_t)xDebug[4 * position + 1]),
+				((int8_t)xDebug[4 * position + 2]),
+				((int8_t)xDebug[4 * position + 3])
+				);
+		}
+
+		BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
+	}
+
+}
+
 static void USB_Init(void)
 {
 	/* Init Device Library */
@@ -470,7 +544,8 @@ static void Display_DemoDescription(void)
 
 	/* Display LCD messages */
 	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-	BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao A3", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
+
 
 	/* Draw Bitmap */
 	//  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);

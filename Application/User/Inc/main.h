@@ -22,6 +22,7 @@
 #define __MAIN_H
 
 /* Includes ------------------------------------------------------------------*/
+#include "stdbool.h"
 #include "stm32f7xx_hal.h"
 #include "usbd_core.h"
 #include "usbd_desc.h"
@@ -30,6 +31,7 @@
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery_audio_ex.h"
 #include "stm32f769i_discovery_ts.h"
+#include "touchscreen.h"
 
 #define ARGB8888_BYTE_PER_PIXEL  4
 #define RGB565_BYTE_PER_PIXEL    2

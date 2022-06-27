@@ -2,7 +2,8 @@
     "files.associations": {
         "main.h": "c",
         "stdint.h": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "touchscreen.h": "c"
     },
     "cortex-debug.registerUseNaturalFormat": false,
     "stm32-for-vscode.openOCDPath": "C:\\USERS\\MARCELO\\APPDATA\\ROAMING\\CODE\\USER\\GLOBALSTORAGE\\BMD.STM32-FOR-VSCODE\\@XPACK-DEV-TOOLS\\OPENOCD\\0.11.0-2.1\\.CONTENT\\BIN\\OPENOCD.EXE",

@@ -21,7 +21,7 @@
 #include "usb_audio.h"
 #include "audio_usb_nodes.h"
 
-extern uint32_t xDebug[10];
+extern uint32_t xDebug[40];
 
 
 /* External variables --------------------------------------------------------*/
@@ -378,7 +378,7 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
         return 0;
       }
 
-      if(samples > 48000)
+      if(samples > 192)
       {
         shouldMute = !shouldMute;
         samples = 0;
@@ -386,42 +386,20 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
 
       buf = input_node->buf;
 
-      uint16_t *frameBuffer =  ((uint16_t*)(buf->data + buf->wr_ptr));
-
-//      for(int i = 0; i < 96; i++)
-//      {
-//
-//    	  if(i % 2 == 0)
-//    		  frameBuffer[i] = frameBuffer[i] * 2;
-//    	  else
-//              frameBuffer[i] = frameBuffer[i] / 2;
-//
-//      }
 
 
-       if(shouldMute)
-       {
-         for(int i = 0; i < data_len; i++)
-         {
-             buf->data[buf->wr_ptr + i] = 0;
-         }
-       }
-
-
-      xDebug[0] = data_len;
-      xDebug[1] = buf->data[buf->wr_ptr];
-//       for(int i = 0; i < data_len; i++)
-//       {
-// //         if((i % 2) == 0)
-//           buf->data[buf->wr_ptr + i] = buf->data[buf->wr_ptr + i] * 2;
-//       }
-
-      // uint8_t* location = buf->data + buf->wr_ptr;
-      // uint8_t* location2 = buf->data + buf->wr_ptr - 1;
-      // *location2 = 0;
-      // *location = 0;
       buf->wr_ptr += data_len; // increments buffer
       samples += data_len;
+
+      // for(uint8_t i = 0; i < 40; i++)
+      // {
+      //   xDebug[i] = buf->data[buf->wr_ptr + i];
+      // }
+
+      for(uint8_t i = 0; i < 40; i++)
+      {
+        xDebug[i] = buf->data[buf->wr_ptr + (2 * i + 1)] * 256 + buf->data[buf->wr_ptr + (2 *i)];
+      }
 
      if((input_node->flags & AUDIO_IO_BEGIN_OF_STREAM) == 0)
      { /* this is the first packet */

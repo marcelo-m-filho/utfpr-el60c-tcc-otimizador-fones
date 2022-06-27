@@ -23,7 +23,6 @@
 #include "audio_speaker_node.h"
 #include "audio_sessions_usb.h"
 
-extern uint32_t xDebug[10];
 
 #if USE_USB_AUDIO_PLAYBACK
 /* Private defines -----------------------------------------------------------*/
@@ -283,12 +282,7 @@ static int8_t  USB_AudioPlaybackSessionExternalControl( AUDIO_ControlCommand_t c
 static int8_t  USB_AudioPlaybackSessionCallback(AUDIO_SessionEvent_t  event, AUDIO_Node_t* node, struct    AUDIO_Session* session_handle)
 {
   AUDIO_USBSession_t * play_session = (AUDIO_USBSession_t *)session_handle;
-  
 
-  // xDebug[0] = play_session->buffer.data[0];
-  // xDebug[1] = play_session->buffer.rd_ptr;
-  // xDebug[2] = play_session->buffer.wr_ptr;
-  // xDebug[3] = play_session->buffer.size;
   switch(event)
   {
   case AUDIO_THRESHOLD_REACHED:  // the buffer fill threshold is reached, then playback starts the speaker to consume data
