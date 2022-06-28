@@ -29,6 +29,8 @@
 #include "usb_audio_constants.h"
 #include "audio_node.h"
 #include "usb_audio_user_cfg.h"
+#include "audio_user_dsp.h"
+
 
 /* Exported constants & exported MACRO --------------------------------------------------------*/
 /* definition of the USB IRQ priority and the USB FIFO size in word */

@@ -41,7 +41,7 @@ static int32_t pending_buffer   = -1;
 static int32_t active_area      = INVALID_AREA;
 static uint32_t ImageIndex      = 0;
 uint32_t watchdogTimer          = 20000;
-uint32_t watchdogCounter        = 362;
+uint32_t watchdogCounter        = 0;
 bool shouldPrintSamples         = false;
 
 
@@ -85,7 +85,7 @@ uint32_t xDebug[40];
  */
 int main(void)
 {
-
+	memset(xDebug, 0, sizeof xDebug);
 	// enables the CPU cache
 	CPU_CACHE_Enable();
 
@@ -103,8 +103,9 @@ int main(void)
 	BSP_LED_Init(LED1);
 	BSP_SDRAM_Init();
 	LCD_Init();
-	USB_Init();
 	Touchscreen_Init();
+
+	USB_Init();
 //	Touchscreen_demo1();
 
 
