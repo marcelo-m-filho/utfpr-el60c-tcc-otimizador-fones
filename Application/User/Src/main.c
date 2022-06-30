@@ -8,14 +8,14 @@
 //#include "life_augmented_argb8888.h"
 /* Private typedef -----------------------------------------------------------*/
 extern LTDC_HandleTypeDef hltdc_discovery;
-static DMA2D_HandleTypeDef hdma2d;
+//static DMA2D_HandleTypeDef hdma2d;
 extern DSI_HandleTypeDef hdsi_discovery;
 DSI_VidCfgTypeDef hdsivideo_handle;
 DSI_CmdCfgTypeDef CmdCfg;
 DSI_LPCmdTypeDef LPCmd;
 DSI_PLLInitTypeDef dsiPllInit;
 
-static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
+// static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 /* Private define ------------------------------------------------------------*/
 #define VSYNC           1
 #define VBP             1
@@ -37,13 +37,12 @@ static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 
 /* Private variables ---------------------------------------------------------*/
 USBD_HandleTypeDef USBD_Device;
-static int32_t pending_buffer   = -1;
-static int32_t active_area      = INVALID_AREA;
-static uint32_t ImageIndex      = 0;
+// static int32_t pending_buffer   = -1;
+// static int32_t active_area      = INVALID_AREA;
+// static uint32_t ImageIndex      = 0;
 uint32_t watchdogTimer          = 20000;
 uint32_t watchdogCounter        = 0;
 bool shouldPrintSamples         = false;
-
 
 uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
 uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
@@ -60,15 +59,15 @@ uint32_t uwPrescalerValue = 0;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Display_DemoDescription(void);
-static void OnError_Handler(uint32_t condition);
+// static void OnError_Handler(uint32_t condition);
 static void CPU_CACHE_Enable(void);
 static void LCD_Init(void);
 static void USB_Init(void);
-void 		LCD_UpdateWatchdog(void);
+void        LCD_UpdateWatchdog(void);
 void        LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 void        LTDC_Init(void);
-static void LCD_BriefDisplay(void);
-void		LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
+// static void LCD_BriefDisplay(void);
+void        LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
 static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
@@ -87,6 +86,7 @@ uint32_t xDebug[40];
 int main(void)
 {
 	memset(xDebug, 0, sizeof xDebug);
+
 	// enables the CPU cache
 	CPU_CACHE_Enable();
 
@@ -108,7 +108,6 @@ int main(void)
 
 	USB_Init();
 //	Touchscreen_demo1();
-
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 	/* Configure timer for volume control handling */
@@ -275,19 +274,19 @@ void USBD_error_handler(void)
 	Error_Handler();
 }
 
-/**
- * @brief  On Error Handler on condition TRUE.
- * @param  condition : Can be TRUE or FALSE
- * @retval None
- */
-static void OnError_Handler(uint32_t condition)
-{
-	if(condition)
-	{
-		BSP_LED_On(LED1);
-		while(1); // blocking on error
-	}
-}
+///**
+// * @brief  On Error Handler on condition TRUE.
+// * @param  condition : Can be TRUE or FALSE
+// * @retval None
+// */
+//static void OnError_Handler(uint32_t condition)
+//{
+//	if(condition)
+//	{
+//		BSP_LED_On(LED1);
+//		while(1); // blocking on error
+//	}
+//}
 
 /**
  * @brief  CPU L1-Cache enable.
@@ -334,8 +333,8 @@ static void LCD_Init(void)
 void LCD_UpdateWatchdog (void)
 {
 
-	uint8_t text[5];
-	sprintf(text, "%04u", (unsigned int)watchdogCounter);
+	char text[5];
+	sprintf(text, "%04u", ((unsigned int)watchdogCounter));
 	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
@@ -432,24 +431,24 @@ void LTDC_Init(void)
 	HAL_LTDC_Init(&hltdc_discovery);
 }
 
-/**
- * @brief  Display Example description.
- * @param  None
- * @retval None
- */
-static void LCD_BriefDisplay(void)
-{
-	BSP_LCD_SetFont(&Font24);
-	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-	BSP_LCD_FillRect(0, 0, 800, 112);
-	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-	BSP_LCD_FillRect(0, 112, 800, 368);
-	BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
-	BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"        LCD_DSI_CmdMode_PartialRefresh");
-	BSP_LCD_SetFont(&Font16);
-	BSP_LCD_DisplayStringAtLine(4, (uint8_t *)"This example shows how to display images on LCD DSI using the partial");
-	BSP_LCD_DisplayStringAtLine(5, (uint8_t *)"Refresh method by splitting the display area.");
-}
+///**
+// * @brief  Display Example description.
+// * @param  None
+// * @retval None
+// */
+//static void LCD_BriefDisplay(void)
+//{
+//	BSP_LCD_SetFont(&Font24);
+//	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+//	BSP_LCD_FillRect(0, 0, 800, 112);
+//	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+//	BSP_LCD_FillRect(0, 112, 800, 368);
+//	BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
+//	BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"        LCD_DSI_CmdMode_PartialRefresh");
+//	BSP_LCD_SetFont(&Font16);
+//	BSP_LCD_DisplayStringAtLine(4, (uint8_t *)"This example shows how to display images on LCD DSI using the partial");
+//	BSP_LCD_DisplayStringAtLine(5, (uint8_t *)"Refresh method by splitting the display area.");
+//}
 
 /**
  * @brief  Initializes the LCD layers.
@@ -481,10 +480,9 @@ void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
 	HAL_LTDC_ConfigLayer(&hltdc_discovery, &Layercfg, LayerIndex);
 }
 
-
 static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
 {
-		CopyImageToLcdFrameBuffer((void*)image, (void*)(LCD_FRAME_BUFFER), width, height, xPosition, yPosition);
+	CopyImageToLcdFrameBuffer((void*)image, (void*)(LCD_FRAME_BUFFER), width, height, xPosition, yPosition);
 }
 
 static void Display_DemoDescription(void)
@@ -516,7 +514,7 @@ static void Display_DemoDescription(void)
 	BSP_LCD_SetFont(&Font24);
 	BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
 	BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
-	
+
 	BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
