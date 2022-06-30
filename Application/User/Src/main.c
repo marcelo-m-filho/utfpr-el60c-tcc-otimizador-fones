@@ -69,7 +69,8 @@ void        LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 void        LTDC_Init(void);
 static void LCD_BriefDisplay(void);
 void		LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
-static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x,uint16_t y, uint16_t xsize, uint16_t ysize);
+static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
+
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 static HAL_StatusTypeDef Timer_Init(void);
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
@@ -334,7 +335,7 @@ void LCD_UpdateWatchdog (void)
 {
 
 	uint8_t text[5];
-	sprintf(text, "%04i", watchdogCounter);
+	sprintf(text, "%04u", (unsigned int)watchdogCounter);
 	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
@@ -480,94 +481,42 @@ void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
 	HAL_LTDC_ConfigLayer(&hltdc_discovery, &Layercfg, LayerIndex);
 }
 
-/**
- * @brief  Converts a line to an ARGB8888 pixel format.
- * @param  pSrc: Pointer to source buffer
- * @param  pDst: Output color
- * @param  xSize: Buffer width
- * @param  ColorMode: Input color mode
- * @retval None
- */
-static void CopyPicture(uint32_t *pSrc, uint32_t *pDst, uint16_t x, uint16_t y, uint16_t xsize, uint16_t ysize)
+
+static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
 {
-
-	uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
-	uint32_t source      = (uint32_t)pSrc;
-
-	/*##-1- Configure the DMA2D Mode, Color Mode and output offset #############*/
-	hdma2d.Init.Mode         = DMA2D_M2M;
-	hdma2d.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;
-	hdma2d.Init.OutputOffset = 800 - xsize;
-	hdma2d.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; /* No Output Alpha Inversion*/
-	hdma2d.Init.RedBlueSwap   = DMA2D_RB_REGULAR;/* No Output Red & Blue swap */
-
-	/*##-2- DMA2D Callbacks Configuration ######################################*/
-	hdma2d.XferCpltCallback  = NULL;
-
-	/*##-3- Foreground Configuration ###########################################*/
-	hdma2d.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-	hdma2d.LayerCfg[1].InputAlpha = 0xFF;
-	hdma2d.LayerCfg[1].InputColorMode = DMA2D_INPUT_ARGB8888;
-	hdma2d.LayerCfg[1].InputOffset = 0;
-	hdma2d.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; /* No ForeGround Red/Blue swap */
-	hdma2d.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; /* No ForeGround Alpha inversion */
-
-	hdma2d.Instance          = DMA2D;
-
-	/* DMA2D Initialization */
-	if(HAL_DMA2D_Init(&hdma2d) == HAL_OK)
-	{
-		if(HAL_DMA2D_ConfigLayer(&hdma2d, 1) == HAL_OK)
-		{
-			if (HAL_DMA2D_Start(&hdma2d, source, destination, xsize, ysize) == HAL_OK)
-			{
-				/* Polling For DMA transfer */
-				HAL_DMA2D_PollForTransfer(&hdma2d, 100);
-			}
-		}
-	}
+		CopyImageToLcdFrameBuffer((void*)image, (void*)(LCD_FRAME_BUFFER), width, height, xPosition, yPosition);
 }
 
 static void Display_DemoDescription(void)
 {
 
-	/* Set LCD Foreground Layer  */
+	// sets lcd foreground layer
 	BSP_LCD_SelectLayer(0);
 
-	BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
-
-	/* Clear the LCD */
+	// clears the lcd
 	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-	/* Set the LCD Text Color */
+	// sets the lcd text color and font
+	BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
 	BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
 
-	/* Display LCD messages */
+	// displays header messages
 	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
 	BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
 
-
-	/* Draw Bitmap */
-	//  BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - 80)/2, 65, (uint8_t *)utfprlogo);
-//    BSP_LCD_DrawBitmap(0, 0, (uint8_t *)utfprlogo);
-
-	CopyImageToLcdFrameBuffer(
-		(void*)&(utfprlogo[0]),
-		(void*)(LCD_FRAME_BUFFER),
-		UTFPR_LOGO_WIDTH,
-		UTFPR_LOGO_HEIGHT,
-		(WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2),
-		80);
-
-// CopyPicture((uint32_t *)utfprlogo, (uint32_t *)LAYER0_ADDRESS, 240, 160, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT);
-
+	// displays footer
 	BSP_LCD_SetFont(&Font12);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Copyright (c) STMicroelectronics 2016", CENTER_MODE);
 
+	// draws logo picture
+	BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 80);
+
+	// displays content messages
 	BSP_LCD_SetFont(&Font24);
 	BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
 	BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
+	
 	BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);

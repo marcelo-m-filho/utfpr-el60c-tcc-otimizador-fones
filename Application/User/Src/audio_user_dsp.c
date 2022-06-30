@@ -5,7 +5,7 @@ extern uint32_t xDebug[40];
 void AudioUserDsp_FrameToSamples(uint8_t*, int16_t* leftSamplePointer, int16_t* rightSamplePointer);
 void AudioUserDsp_SamplesToFrame(uint8_t*, int16_t* leftSamplePointer, int16_t* rightSamplePointer);
 
-void AudioUserDsp_ApplyFilterToSamples(int8_t* dataPointer, uint32_t dataLength, int16_t (*leftChannelFilter)(int16_t), int16_t (*rightChannelFilter)(int16_t))
+void AudioUserDsp_ApplyFilterToSamples(uint8_t* dataPointer, uint32_t dataLength, int16_t (*leftChannelFilter)(int16_t), int16_t (*rightChannelFilter)(int16_t))
 {
 	int16_t leftSample, rightSample;
 	for (uint32_t i = 0; i < dataLength; i++)
