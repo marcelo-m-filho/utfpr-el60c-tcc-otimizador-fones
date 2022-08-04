@@ -42,6 +42,7 @@ USBD_HandleTypeDef USBD_Device;
 // static uint32_t ImageIndex      = 0;
 uint32_t watchdogTimer          = 20000;
 uint32_t watchdogCounter        = 0;
+uint32_t touchscreenTimer 		= 0;
 bool shouldPrintSamples         = false;
 
 uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
@@ -101,7 +102,7 @@ int main(void)
 	// configures the system clock to have a frequency of 200 MHz
 	SystemClock_Config();
 
-	BSP_LED_Init(LED1);
+	// BSP_LED_Init(LED1);
 	BSP_SDRAM_Init();
 	LCD_Init();
 	Touchscreen_Init();
@@ -117,7 +118,11 @@ int main(void)
 	/* Infinite loop */
 	while (1)
 	{
-		Touchscreen_ButtonHandler();
+		if(++touchscreenTimer > 10)
+		{
+			Touchscreen_ButtonHandler();
+			touchscreenTimer = 0;
+		}
 
 		if(shouldPrintSamples)
 		{
@@ -382,17 +387,30 @@ void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
 
 static void USB_Init(void)
 {
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+
 	/* Init Device Library */
+	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"USB Device Library ..... ", LEFT_MODE);
 	USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
+	BSP_LCD_DisplayStringAt(420, 10, (uint8_t *)"OK", LEFT_MODE);
 
 	/* Add Supported Class */
+	BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"USB Register Class ..... ", LEFT_MODE);
 	USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
+	BSP_LCD_DisplayStringAt(420, 30, (uint8_t *)"OK", LEFT_MODE);
+
 
 	/* Add Interface callbacks for AUDIO Class */
+	BSP_LCD_DisplayStringAt(0, 50, (uint8_t *)"USB Register Interface . ", LEFT_MODE);
 	USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
+	BSP_LCD_DisplayStringAt(420, 50, (uint8_t *)"OK", LEFT_MODE);
 
 	/* Start Device Process */
+	BSP_LCD_DisplayStringAt(0, 70, (uint8_t *)"USB Init ............... ", LEFT_MODE);
 	USBD_Start(&USBD_Device);
+	BSP_LCD_DisplayStringAt(420, 70, (uint8_t *)"OK", LEFT_MODE);
+
 }
 
 /**
@@ -500,8 +518,8 @@ static void Display_DemoDescription(void)
 	BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
 
 	// displays header messages
-	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-	BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
+	// BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
+	// BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
 
 	// displays footer
 	BSP_LCD_SetFont(&Font12);

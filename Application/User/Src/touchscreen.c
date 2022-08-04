@@ -65,6 +65,7 @@ static uint32_t Touchscreen_Handle_NewTouch(void);
 /* Private functions ---------------------------------------------------------*/
 
 extern uint32_t xDebug[40];
+extern uint32_t divider;
 extern bool shouldPrintSamples;
 
 uint32_t yOffset = 0;
@@ -108,6 +109,9 @@ void Touchscreen_ButtonHandler(void)
 				BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
 				state = 1;
 				shouldPrintSamples = true;
+				divider *= 2;
+				if (divider > 64)
+					divider = 64;
 			}
 		}
 		if ((touchXPosition > (CIRCLE_XPOS(2) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(2) + CIRCLE_RADIUS)))
@@ -118,6 +122,10 @@ void Touchscreen_ButtonHandler(void)
 				BSP_LCD_SetTextColor(LCD_COLOR_RED);
 				BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
 				state = 2;
+				divider /= 2;
+				shouldPrintSamples = true;
+				if(divider < 1)
+					divider = 1;
 			}
 		}
 

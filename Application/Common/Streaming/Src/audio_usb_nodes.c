@@ -403,7 +403,7 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
       //   xDebug[i] = buf->data[buf->wr_ptr + (2 * i + 1)] * 256 + buf->data[buf->wr_ptr + (2 *i)];
       // }
 
-      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, NULL);
+      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, NULL);
 
 
       // for(uint32_t i = 0; i < data_len; i++)
