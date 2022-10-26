@@ -64,9 +64,11 @@ static uint32_t Touchscreen_Handle_NewTouch(void);
 
 /* Private functions ---------------------------------------------------------*/
 
-extern uint32_t xDebug[40];
+extern uint32_t xDebug[100];
 extern uint32_t divider;
 extern bool shouldPrintSamples;
+extern bool shouldApplyFilter;
+bool areInitialCirclesDrawn = false;
 
 uint32_t yOffset = 0;
 uint32_t xOffset = 150;
@@ -85,7 +87,12 @@ void Touchscreen_ButtonHandler(void)
 	if(initStatus != TS_OK)
 		return;
 
-	Touchscreen_DrawBackground_Circles(state);
+
+	if(!areInitialCirclesDrawn)
+	{
+		Touchscreen_DrawBackground_Circles(0);
+		areInitialCirclesDrawn = true;
+	}
 
 	initStatus = BSP_TS_GetState(&TS_State);
 
@@ -100,56 +107,58 @@ void Touchscreen_ButtonHandler(void)
 	{
 		if ((touchXPosition > (CIRCLE_XPOS(1) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(1) + CIRCLE_RADIUS)))
 		{
-			if ((state & 1) == 0)
-			{
-				Touchscreen_DrawBackground_Circles(state);
+			// if ((state & 1) == 0)
+			// {
+				Touchscreen_DrawBackground_Circles(1);
+				shouldApplyFilter = true;
 
-				BSP_LCD_SetTextColor(togglePaint == 1 ? LCD_COLOR_LIGHTRED : LCD_COLOR_WHITE);
-				togglePaint = !togglePaint;
-				BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
-				state = 1;
-				shouldPrintSamples = true;
-				divider *= 2;
-				if (divider > 64)
-					divider = 64;
-			}
+				// BSP_LCD_SetTextColor(LCD_COLOR_LIGHTRED);
+				// togglePaint = !togglePaint;
+				// BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
+				// state = 1;
+				// shouldPrintSamples = true;
+				// divider *= 2;
+				// if (divider > 64)
+				// 	divider = 64;
+			// }
 		}
 		if ((touchXPosition > (CIRCLE_XPOS(2) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(2) + CIRCLE_RADIUS)))
 		{
-			if ((state & 2) == 0)
-			{
-				Touchscreen_DrawBackground_Circles(state);
-				BSP_LCD_SetTextColor(LCD_COLOR_RED);
-				BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
-				state = 2;
-				divider /= 2;
-				shouldPrintSamples = true;
-				if(divider < 1)
-					divider = 1;
-			}
+			// if ((state & 2) == 0)
+			// {
+				Touchscreen_DrawBackground_Circles(2);
+				shouldApplyFilter = false;
+				// BSP_LCD_SetTextColor(LCD_COLOR_RED);
+				// BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+				// state = 2;
+				// divider /= 2;
+				// shouldPrintSamples = true;
+				// if(divider < 1)
+				// 	divider = 1;
+			// }
 		}
 
-		if ((touchXPosition > (CIRCLE_XPOS(3) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(3) + CIRCLE_RADIUS)))
-		{
-			if ((state & 4) == 0)
-			{
-				Touchscreen_DrawBackground_Circles(state);
-				BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-				BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
-				state = 4;
-			}
-		}
+		// if ((touchXPosition > (CIRCLE_XPOS(3) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(3) + CIRCLE_RADIUS)))
+		// {
+		// 	if ((state & 4) == 0)
+		// 	{
+		// 		Touchscreen_DrawBackground_Circles(state);
+		// 		BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+		// 		BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+		// 		state = 4;
+		// 	}
+		// }
 
-		if ((touchXPosition > (CIRCLE_XPOS(4) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(4) + CIRCLE_RADIUS)))
-		{
-			if ((state & 8) == 0)
-			{
-				Touchscreen_DrawBackground_Circles(state);
-				BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-				BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
-				state = 8;
-			}
-		}
+		// if ((touchXPosition > (CIRCLE_XPOS(4) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(4) + CIRCLE_RADIUS)))
+		// {
+		// 	if ((state & 8) == 0)
+		// 	{
+		// 		Touchscreen_DrawBackground_Circles(state);
+		// 		BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+		// 		BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+		// 		state = 8;
+		// 	}
+		// }
 	}
 
 }
@@ -178,7 +187,7 @@ void Touchscreen_demo1(void)
 	{
 		/* Display touch screen demo description */
 		// Touchscreen_SetHint_Demo(TOUCHSCREEN_DEMO_1);
-		Touchscreen_DrawBackground_Circles(state);
+		// Touchscreen_DrawBackground_Circles(state);
 
 		while (exitTsUseCase == 0)
 		{
@@ -516,11 +525,15 @@ void Touchscreen_DrawBackground_Circles(uint8_t state)
 	switch (state)
 	{
 	  case 0:
-		  BSP_LCD_SetTextColor(LCD_COLOR_LIGHTGRAY);
+		  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
+		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
 
-		//   BSP_LCD_SetTextColor(LCD_COLOR_RED);
-		//   BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+		  BSP_LCD_SetTextColor(LCD_COLOR_RED);
+		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+			BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
 
 		//   BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
 		//   BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
@@ -536,74 +549,82 @@ void Touchscreen_DrawBackground_Circles(uint8_t state)
 		  break;
 
 	  case 1:
-		  BSP_LCD_SetTextColor(togglePaint == 1 ? LCD_COLOR_LIGHTRED : LCD_COLOR_WHITE);
+		  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
-		  BSP_LCD_SetTextColor(togglePaint == 1 ? LCD_COLOR_WHITE : LCD_COLOR_LIGHTRED);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
+
+		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
+		//   BSP_LCD_SetTextColor(togglePaint == 1 ? LCD_COLOR_WHITE : LCD_COLOR_LIGHTRED);
+		//   BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
 		  break;
 
 	  case 2:
-		  BSP_LCD_SetTextColor(LCD_COLOR_RED);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
-		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
+			BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		  	BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
+
+		  	BSP_LCD_SetTextColor(LCD_COLOR_RED);
+		  	BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+		//   BSP_LCD_SetTextColor(LCD_COLOR_RED);
+		//   BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+		//   BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+		//   BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
 		  break;
 
-	  case 4:
-		  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
-		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS - 2);
-		  break;
+	//   case 4:
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS - 2);
+	// 	  break;
 
-	  case 8:
-		  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(4), CIRCLE_RADIUS);
-		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(4), CIRCLE_RADIUS - 2);
-		  break;
+	//   case 8:
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(4), CIRCLE_RADIUS);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(4), CIRCLE_RADIUS - 2);
+	// 	  break;
 
-	  case 16:
-		  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+	//   case 16:
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
 
-		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS - 2);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS - 2);
 
-		  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-		  BSP_LCD_DrawHLine(CIRCLE_XPOS(2) - LINE_LENGHT, CIRCLE_YPOS(2), 2 * LINE_LENGHT);
-		  BSP_LCD_DrawHLine(CIRCLE_XPOS(3) - LINE_LENGHT, CIRCLE_YPOS(3), 2 * LINE_LENGHT);
-		  BSP_LCD_DrawVLine(CIRCLE_XPOS(3), CIRCLE_YPOS(3) - LINE_LENGHT, 2 * LINE_LENGHT);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+	// 	  BSP_LCD_DrawHLine(CIRCLE_XPOS(2) - LINE_LENGHT, CIRCLE_YPOS(2), 2 * LINE_LENGHT);
+	// 	  BSP_LCD_DrawHLine(CIRCLE_XPOS(3) - LINE_LENGHT, CIRCLE_YPOS(3), 2 * LINE_LENGHT);
+	// 	  BSP_LCD_DrawVLine(CIRCLE_XPOS(3), CIRCLE_YPOS(3) - LINE_LENGHT, 2 * LINE_LENGHT);
 
-		  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-		  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-		  BSP_LCD_SetFont(&Font24);
-		  x = CIRCLE_XPOS(2) + 20;
-		  y = CIRCLE_YPOS(2) - CIRCLE_RADIUS - BSP_LCD_GetFont()->Height;
-		  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Volume", LEFT_MODE);
-		  break;
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+	// 	  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_SetFont(&Font24);
+	// 	  x = CIRCLE_XPOS(2) + 20;
+	// 	  y = CIRCLE_YPOS(2) - CIRCLE_RADIUS - BSP_LCD_GetFont()->Height;
+	// 	  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Volume", LEFT_MODE);
+	// 	  break;
 
-	  case 32:
-		  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
+	//   case 32:
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS);
 
-		  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
-		  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);
+	// 	  BSP_LCD_FillCircle(CIRCLE_XPOS(2), CIRCLE_YPOS(2), CIRCLE_RADIUS - 2);
 
-		  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-		  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-		  BSP_LCD_SetFont(&Font20);
-		  x = CIRCLE_XPOS(1) - 10;
-		  y = CIRCLE_YPOS(1) - (BSP_LCD_GetFont()->Height) / 2;
-		  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Up", LEFT_MODE);
-		  x = CIRCLE_XPOS(2) - 10;
-		  y = CIRCLE_YPOS(3)  - (BSP_LCD_GetFont()->Height) / 2;
-		  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Dw", LEFT_MODE);
-		  BSP_LCD_SetFont(&Font12);
+	// 	  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	// 	  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	// 	  BSP_LCD_SetFont(&Font20);
+	// 	  x = CIRCLE_XPOS(1) - 10;
+	// 	  y = CIRCLE_YPOS(1) - (BSP_LCD_GetFont()->Height) / 2;
+	// 	  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Up", LEFT_MODE);
+	// 	  x = CIRCLE_XPOS(2) - 10;
+	// 	  y = CIRCLE_YPOS(3)  - (BSP_LCD_GetFont()->Height) / 2;
+	// 	  BSP_LCD_DisplayStringAt(x, y, (uint8_t *)"Dw", LEFT_MODE);
+	// 	  BSP_LCD_SetFont(&Font12);
 
 		  break;
 	}

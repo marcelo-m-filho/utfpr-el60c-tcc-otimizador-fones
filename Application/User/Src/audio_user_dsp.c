@@ -1,13 +1,13 @@
 #include "audio_user_dsp.h"
 
-extern uint32_t xDebug[40];
+extern uint32_t xDebug[100];
 
 void AudioUserDsp_FrameToSamples(uint8_t*, int16_t* leftSamplePointer, int16_t* rightSamplePointer);
 void AudioUserDsp_SamplesToFrame(uint8_t*, int16_t* leftSamplePointer, int16_t* rightSamplePointer);
 
 uint32_t divider = 1;
 
-float a0, a1, a2, b1, b2, in_z1, in_z2, out_z1, out_z2;
+double a0, a1, a2, b1, b2, in_z1, in_z2, out_z1, out_z2;
 
 void AudioUserDsp_ApplyFilterToSamples(uint8_t* dataPointer, uint32_t dataLength, int16_t (*leftChannelFilter)(int16_t), int16_t (*rightChannelFilter)(int16_t))
 {
@@ -30,12 +30,15 @@ void AudioUserDsp_ApplyFilterToSamples(uint8_t* dataPointer, uint32_t dataLength
 
 		AudioUserDsp_SamplesToFrame(framePointer, &leftSample, &rightSample);
 
-		if(i < 20)
+		if(i < 40)
 		{
 			xDebug[2 * i + 0] = originalLeftSample;
 			xDebug[2 * i + 1] = leftSample;
 		}
-		// xDebug[19] = divider;
+		xDebug[0] = (int16_t)in_z1;
+		xDebug[1] = (int16_t)in_z2;
+		xDebug[2] = (int16_t)out_z1;
+		xDebug[3] = (int16_t)out_z2;
 	}
 }
 
@@ -69,19 +72,19 @@ int16_t AudioUserDsp_LowPassFilter(int16_t sample)
 	// b1 = -1.3262717309424847f;
 	// b2 = 0.47954107911048205f;
 
-	a0 = 0.7414416903620761f;
-	a1 = -1.4828833807241522f;
-  	a2 = 0.7414416903620761f;
-  	b1 = -1.414890450876696f;
-  	b2 = 0.5508763105716084f;
+	a0 = 0.011050373933114971f;
+	a1 = 0.022100747866229942f;
+  	a2 = 0.011050373933114971f;
+  	b1 = -1.3368583644305965f;
+  	b2 = 0.3810598601630564f;
 
 	double fInSample = (float)(sample >> 2);
 	double fOutSample = 
-		a0 * fInSample 
-		+ a1 * in_z1 +
-		+ a2 * in_z2 +
-		- b1 * out_z1 +
-		- b2 * out_z2;
+			a0 * fInSample
+		+	a1 * in_z1
+		+ 	a2 * in_z2;
+		// - b1 * out_z1
+		// - b2 * out_z2;
 
 
 	in_z2 = in_z1;

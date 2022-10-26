@@ -21,7 +21,8 @@
 #include "usb_audio.h"
 #include "audio_usb_nodes.h"
 
-extern uint32_t xDebug[40];
+extern uint32_t xDebug[100];
+bool shouldApplyFilter;
 
 
 /* External variables --------------------------------------------------------*/
@@ -403,7 +404,8 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
       //   xDebug[i] = buf->data[buf->wr_ptr + (2 * i + 1)] * 256 + buf->data[buf->wr_ptr + (2 *i)];
       // }
 
-      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, NULL);
+      if(shouldApplyFilter)
+        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, NULL);
 
 
       // for(uint32_t i = 0; i < data_len; i++)

@@ -76,7 +76,7 @@ static HAL_StatusTypeDef Timer_Init(void);
 #endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
 /* externals  variables -----------------------------------------------*/
 extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
-uint32_t xDebug[40];
+uint32_t xDebug[100];
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -126,7 +126,7 @@ int main(void)
 
 		if(shouldPrintSamples)
 		{
-			LCD_PrintDebugVariable(10, true);
+			LCD_PrintDebugVariable(20, true);
 			shouldPrintSamples = false;
 		}
 
@@ -536,7 +536,7 @@ static void Display_DemoDescription(void)
 	BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
-	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Imagens | Touch Inicial", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Filtros | Touch Inicial", CENTER_MODE);
 
 }
 
