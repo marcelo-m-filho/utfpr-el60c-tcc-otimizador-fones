@@ -138,27 +138,31 @@ void Touchscreen_ButtonHandler(void)
 			// }
 		}
 
-		// if ((touchXPosition > (CIRCLE_XPOS(3) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(3) + CIRCLE_RADIUS)))
-		// {
-		// 	if ((state & 4) == 0)
-		// 	{
-		// 		Touchscreen_DrawBackground_Circles(state);
-		// 		BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-		// 		BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
-		// 		state = 4;
-		// 	}
-		// }
+		if ((touchXPosition > (CIRCLE_XPOS(3) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(3) + CIRCLE_RADIUS)))
+		{
+			// shouldPrintSamples = true;
 
-		// if ((touchXPosition > (CIRCLE_XPOS(4) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(4) + CIRCLE_RADIUS)))
-		// {
-		// 	if ((state & 8) == 0)
-		// 	{
-		// 		Touchscreen_DrawBackground_Circles(state);
-		// 		BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-		// 		BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
-		// 		state = 8;
-		// 	}
-		// }
+			// if ((state & 4) == 0)
+			// {
+			// 	Touchscreen_DrawBackground_Circles(state);
+			// 	BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+			// 	BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+			// 	state = 4;
+			// }
+		}
+
+		if ((touchXPosition > (CIRCLE_XPOS(4) - CIRCLE_RADIUS)) && (touchXPosition < (CIRCLE_XPOS(4) + CIRCLE_RADIUS)))
+		{
+			shouldPrintSamples = true;
+
+			// if ((state & 8) == 0)
+			// {
+			// 	Touchscreen_DrawBackground_Circles(state);
+			// 	BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+			// 	BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+			// 	state = 8;
+			// }
+		}
 	}
 
 }
@@ -192,8 +196,6 @@ void Touchscreen_demo1(void)
 		while (exitTsUseCase == 0)
 		{
 			char desc[50];
-			sprintf(desc,"%03i|%03i|%03i|%03i|%03i|%03i", xDebug[0], xDebug[1], xDebug[2], xDebug[3], xDebug[4],  xDebug[5]);
-			// // sprintf(desc,"%05i | %05i | %05i | %05i | %05i", xDebug[0], xDebug[1]);
 			// // BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()/2, (uint8_t *)desc, CENTER_MODE);
 											// BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
 
@@ -538,8 +540,8 @@ void Touchscreen_DrawBackground_Circles(uint8_t state)
 		//   BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
 		//   BSP_LCD_FillCircle(CIRCLE_XPOS(3), CIRCLE_YPOS(3), CIRCLE_RADIUS);
 
-		//   BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-		//   BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
+		  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+		  BSP_LCD_FillCircle(CIRCLE_XPOS(4), CIRCLE_YPOS(3), CIRCLE_RADIUS);
 
 		//   BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
 		//   BSP_LCD_FillCircle(CIRCLE_XPOS(1), CIRCLE_YPOS(1), CIRCLE_RADIUS - 2);

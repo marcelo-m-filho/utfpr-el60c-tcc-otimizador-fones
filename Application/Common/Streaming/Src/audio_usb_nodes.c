@@ -379,34 +379,17 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
         return 0;
       }
 
-      if(samples > 192)
-      {
-        shouldMute = !shouldMute;
-        samples = 0;
-      }
-
       buf = input_node->buf;
-
-
 
       uint8_t* newDataPointer = buf->data + buf->wr_ptr;
 
       buf->wr_ptr += data_len; // increments buffer
-      samples += data_len;
-
-      // for(uint8_t i = 0; i < 40; i++)
-      // {
-      //   xDebug[i] = buf->data[buf->wr_ptr + i];
-      // }
-
-      // for(uint8_t i = 0; i < 40; i++)
-      // {
-      //   xDebug[i] = buf->data[buf->wr_ptr + (2 * i + 1)] * 256 + buf->data[buf->wr_ptr + (2 *i)];
-      // }
 
       if(shouldApplyFilter)
-        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, NULL);
+        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_ChangeAmplitude);
 
+      if(data_len != 192)
+        xDebug[0] = data_len;
 
       // for(uint32_t i = 0; i < data_len; i++)
       // {
@@ -416,11 +399,6 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
 
       //   rightSample /= 16;
 
-      //   if(i < 20)
-      //   {
-      //     xDebug[2 * i] = leftSample;
-      //     xDebug[2 * i + 1] = rightSample;
-      //   }
 
       //   newDataPointer[4 * i] = ((uint16_t)leftSample) % 256;
       //   newDataPointer[4 * i + 1] = ((uint16_t)leftSample) / 256;
