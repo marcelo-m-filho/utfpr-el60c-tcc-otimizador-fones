@@ -42,14 +42,8 @@ static int8_t  AUDIO_USB_GetConfigDesc (uint8_t ** pdata, uint16_t * psize, uint
 
  /* exported  variables ---------------------------------------------------------*/
  /* list of used sessions */
- 
-#if USE_USB_AUDIO_PLAYBACK
   AUDIO_USBSession_t USB_AudioPlabackSession;
-#endif /* USE_USB_AUDIO_PLAYBACK*/
  
-#if  USE_USB_AUDIO_RECORDING
-  AUDIO_USBSession_t USB_AudioRecordingSession;
-#endif /* USE_USB_AUDIO_RECORDING*/
  /* private  functions ---------------------------------------------------------*/
  
 /**
@@ -61,21 +55,16 @@ static int8_t  AUDIO_USB_GetConfigDesc (uint8_t ** pdata, uint16_t * psize, uint
   */
 static int8_t  AUDIO_USB_Init(USBD_AUDIO_FunctionDescriptionfTypeDef* usb_audio_class_function , uint32_t private_data)
 {
-  int interface_offset=0, total_control_count=0;
+  int interface_offset = 0;
+  int total_control_count = 0;
   uint8_t control_count = 0;
 
-#if USE_USB_AUDIO_PLAYBACK
+
    /* Initializes the USB play session */
   AUDIO_PlaybackSessionInit(&usb_audio_class_function->as_interfaces[interface_offset], &(usb_audio_class_function->controls[interface_offset]), &control_count, (uint32_t) &USB_AudioPlabackSession);
   interface_offset++;
   total_control_count += control_count;
-#endif /* USE_USB_AUDIO_PLAYBACK*/
-#if  USE_USB_AUDIO_RECORDING 
-  /* Initializes the USB record session */
-  AUDIO_RecordingSessionInit(&usb_audio_class_function->as_interfaces[interface_offset], &(usb_audio_class_function->controls[total_control_count]), &control_count, (uint32_t) &USB_AudioRecordingSession);
-  interface_offset++;
-  total_control_count += control_count;
-#endif /* USE_USB_AUDIO_RECORDING*/
+
   usb_audio_class_function->as_interfaces_count = interface_offset;
   usb_audio_class_function->control_count = total_control_count;
 #if USE_AUDIO_USB_INTERRUPT
@@ -96,15 +85,10 @@ static int8_t  AUDIO_USB_DeInit(USBD_AUDIO_FunctionDescriptionfTypeDef* audio_fu
 {
   int i=0;
   
-#if USE_USB_AUDIO_PLAYBACK
   USB_AudioPlabackSession.SessionDeInit( (uint32_t) &USB_AudioPlabackSession);
   audio_function->as_interfaces[0].alternate = 0;
   i++;
-#endif /* USE_USB_AUDIO_PLAYBACK*/
-#if  USE_USB_AUDIO_RECORDING
-  USB_AudioRecordingSession.SessionDeInit((uint32_t) &USB_AudioRecordingSession);
-  audio_function->as_interfaces[i].alternate = 0;
-#endif /* USE_USB_AUDIO_RECORDING*/
+
   
   return 0;
 }
