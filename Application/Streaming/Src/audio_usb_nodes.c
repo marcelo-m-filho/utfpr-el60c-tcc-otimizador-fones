@@ -381,12 +381,12 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
 
       buf = input_node->buf;
 
-      uint8_t* newDataPointer = buf->data + buf->wr_ptr;
+//      uint8_t* newDataPointer = buf->data + buf->wr_ptr;
 
       buf->wr_ptr += data_len; // increments buffer
 
-      if(shouldApplyFilter)
-        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_ChangeAmplitude);
+//      if(shouldApplyFilter)
+//        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_ChangeAmplitude);
 
       if(data_len != 192)
         xDebug[0] = data_len;

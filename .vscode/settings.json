@@ -1,34 +1,29 @@
 {
-    "files.associations": {
-        "main.h": "c",
-        "stdint.h": "c",
-        "type_traits": "c",
-        "touchscreen.h": "c",
-        "audio_user_dsp.h": "c",
-        "audio_speaker_node.h": "c",
-        "usb_audio.h": "c",
-        "audio_user_devices.h": "c",
-        "stm32f769i_discovery_audio_ex.h": "c",
-        "audio_sessions_usb.h": "c",
-        "usbd_desc.h": "c",
-        "usbd_def.h": "c",
-        "usbd_conf.h": "c",
-        "hal_usb_ex.h": "c",
-        "audio_node.h": "c",
-        "stm32f7xx_hal_pcd.h": "c",
-        "stm32f769i_discovery.h": "c",
-        "wm8994_ex.h": "c"
-    },
     "cortex-debug.registerUseNaturalFormat": false,
     "stm32-for-vscode.openOCDPath": "C:\\USERS\\MARCELO\\APPDATA\\ROAMING\\CODE\\USER\\GLOBALSTORAGE\\BMD.STM32-FOR-VSCODE\\@XPACK-DEV-TOOLS\\OPENOCD\\0.11.0-2.1\\.CONTENT\\BIN\\OPENOCD.EXE",
     "cortex-debug.armToolchainPath": "c:\\Users\\Marcelo\\AppData\\Roaming\\Code\\User\\globalStorage\\bmd.stm32-for-vscode\\@xpack-dev-tools\\arm-none-eabi-gcc\\10.3.1-2.3.1\\.content\\bin",
     "cppbuild.isEnabled": false,
-    "workbench.colorCustomizations": {
-        "activityBar.background": "#3A2C02",
-        "titleBar.activeBackground": "#523D02",
-        "titleBar.activeForeground": "#FEFAEB"
-    },
     "files.exclude": {
         "Debug/": true
-    }
+    },
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#802000",
+        "activityBar.background": "#802000",
+        "activityBar.foreground": "#e7e7e7",
+        "activityBar.inactiveForeground": "#e7e7e799",
+        "activityBarBadge.background": "#000000",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#802000",
+        "statusBar.background": "#4d1300",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#802000",
+        "statusBarItem.remoteBackground": "#4d1300",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#4d1300",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#4d130099",
+        "titleBar.inactiveForeground": "#e7e7e799"
+    },
+    "peacock.color": "#4d1300"
 }

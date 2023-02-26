@@ -42,7 +42,7 @@ void AudioUserDsp_ApplyFilterToSamples(uint8_t* dataPointer, uint32_t dataLength
 		}
 	}
 
-		int16_t originalLeftSample = leftSample;
+//		int16_t originalLeftSample = leftSample;
 
 		if(leftChannelFilter)
 			leftSample = leftChannelFilter(leftSample, i);
@@ -99,7 +99,7 @@ int16_t AudioUserDsp_LowPassFilter(int16_t sample, uint32_t iteration)
   	b2 = 0.3810598601630564f;
 
 
-	float fInSample = (float)sample;
+//	float fInSample = (float)sample;
 	// float fOutSample = (a0 * fInSample) + (a1 * fInSample) + (a2 * fInSample);
 	// float fOutSample = (a0 * fInSample) + (a1 * in_z1) + (a2 * in_z2);
 	
