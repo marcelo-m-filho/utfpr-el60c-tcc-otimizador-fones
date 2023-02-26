@@ -40,7 +40,7 @@
 #define __ADV7533_H
 
 /* Includes ------------------------------------------------------------------*/
-#include "../Common/audio.h"
+#include "../common/audio.h"
 
 /** @addtogroup BSP
   * @{

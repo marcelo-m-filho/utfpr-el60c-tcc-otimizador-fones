@@ -15,7 +15,9 @@
         "usbd_conf.h": "c",
         "hal_usb_ex.h": "c",
         "audio_node.h": "c",
-        "stm32f7xx_hal_pcd.h": "c"
+        "stm32f7xx_hal_pcd.h": "c",
+        "stm32f769i_discovery.h": "c",
+        "wm8994_ex.h": "c"
     },
     "cortex-debug.registerUseNaturalFormat": false,
     "stm32-for-vscode.openOCDPath": "C:\\USERS\\MARCELO\\APPDATA\\ROAMING\\CODE\\USER\\GLOBALSTORAGE\\BMD.STM32-FOR-VSCODE\\@XPACK-DEV-TOOLS\\OPENOCD\\0.11.0-2.1\\.CONTENT\\BIN\\OPENOCD.EXE",
