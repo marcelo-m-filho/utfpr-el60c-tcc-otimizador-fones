@@ -33,12 +33,12 @@
 #include "stm32f769i_discovery_ts.h"
 #include "touchscreen.h"
 
-#define ARGB8888_BYTE_PER_PIXEL  4
-#define RGB565_BYTE_PER_PIXEL    2
-#define LCD_FRAME_BUFFER  0xC0000000
-#define LAYER_SIZE_X          240
-#define LAYER_SIZE_Y          130
-#define LAYER_BYTE_PER_PIXEL  RGB565_BYTE_PER_PIXEL
+#define ARGB8888_BYTE_PER_PIXEL 4
+#define RGB565_BYTE_PER_PIXEL   2
+#define LCD_FRAME_BUFFER        0xC0000000
+#define LAYER_SIZE_X            240
+#define LAYER_SIZE_Y            130
+#define LAYER_BYTE_PER_PIXEL    RGB565_BYTE_PER_PIXEL
 
 #ifdef USE_FULL_ASSERT
 /* Assert activated */

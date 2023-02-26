@@ -1,90 +1,92 @@
-/* Includes ------------------------------------------------------------------*/
+// includes --------------------------------------------------------------------
 #include "main.h"
 #include "utfprlogo.h"
 #include "stlogo.h"
 #include "usb_audio.h"
+#include "usart.h"
 
-//#include "image_320x240_argb8888.h"
-//#include "life_augmented_argb8888.h"
-/* Private typedef -----------------------------------------------------------*/
+
+// external typedefs -----------------------------------------------------------
 extern LTDC_HandleTypeDef hltdc_discovery;
-//static DMA2D_HandleTypeDef hdma2d;
 extern DSI_HandleTypeDef hdsi_discovery;
+
+// private typedefs ------------------------------------------------------------
 DSI_VidCfgTypeDef hdsivideo_handle;
 DSI_CmdCfgTypeDef CmdCfg;
 DSI_LPCmdTypeDef LPCmd;
 DSI_PLLInitTypeDef dsiPllInit;
 
-// static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
-/* Private define ------------------------------------------------------------*/
-#define VSYNC           1
-#define VBP             1
-#define VFP             1
-#define VACT            480
-#define HSYNC           1
-#define HBP             1
-#define HFP             1
-#define HACT            400      /* !!!! SCREEN DIVIDED INTO 2 AREAS !!!! */
+// private defines -------------------------------------------------------------
+#define VSYNC             1
+#define VBP               1
+#define VFP               1
+#define VACT              480
+#define HSYNC             1
+#define HBP               1
+#define HFP               1
+#define HACT              400 // screen divided into two areas
 
-#define LAYER0_ADDRESS  (LCD_FB_START_ADDRESS)
+#define LAYER0_ADDRESS    (LCD_FB_START_ADDRESS)
 
-#define INVALID_AREA    0
-#define LEFT_AREA       1
-#define RIGHT_AREA      2
-#define WVGA_RES_X      800
-#define WVGA_RES_Y      480
-/* Private macro -------------------------------------------------------------*/
+#define INVALID_AREA      0
+#define LEFT_AREA         1
+#define RIGHT_AREA        2
+#define WVGA_RES_X        800
+#define WVGA_RES_Y        480
 
-/* Private variables ---------------------------------------------------------*/
+// private macros --------------------------------------------------------------
+
+// private variables -----------------------------------------------------------
 USBD_HandleTypeDef USBD_Device;
 // static int32_t pending_buffer   = -1;
 // static int32_t active_area      = INVALID_AREA;
 // static uint32_t ImageIndex      = 0;
-uint32_t watchdogTimer          = 20000;
-uint32_t watchdogCounter        = 0;
-uint32_t touchscreenTimer 		= 0;
-bool shouldPrintSamples         = true;
+uint32_t watchdogTimer    = 20000;
+uint32_t watchdogCounter  = 0;
+uint32_t touchscreenTimer = 0;
+bool shouldPrintSamples   = true;
+float in_z1               = 0;
+float in_z2               = 0;
+float out_z1              = 0;
+float out_z2              = 0;
 
-float in_z1 = 0;
-float in_z2 = 0;
-float out_z1 = 0;
-float out_z2 = 0;
+uint8_t pColLeft[]        = {0x00, 0x00, 0x01, 0x8F}; // 0 -> 399
+uint8_t pColRight[]       = {0x01, 0x90, 0x03, 0x1F}; // 400 -> 799
+uint8_t pPage[]           = {0x00, 0x00, 0x01, 0xDF}; // 0 -> 479
+uint8_t pSyncLeft[]       = {0x02, 0x15};             // Scan @ 533
 
-
-uint8_t pColLeft[]    = {0x00, 0x00, 0x01, 0x8F}; /*   0 -> 399 */
-uint8_t pColRight[]   = {0x01, 0x90, 0x03, 0x1F}; /* 400 -> 799 */
-uint8_t pPage[]       = {0x00, 0x00, 0x01, 0xDF}; /*   0 -> 479 */
-uint8_t pSyncLeft[]   = {0x02, 0x15};             /* Scan @ 533 */
-static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
-
-#if USE_AUDIO_TIMER_VOLUME_CTRL
-TIM_HandleTypeDef TimHandle;
-/* Prescaler declaration */
-uint32_t uwPrescalerValue = 0;
-#endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
-
-/* Private function prototypes -----------------------------------------------*/
-static void SystemClock_Config(void);
-static void Display_DemoDescription(void);
-// static void OnError_Handler(uint32_t condition);
-static void CPU_CACHE_Enable(void);
-static void LCD_Init(void);
-static void USB_Init(void);
-void        LCD_UpdateWatchdog(void);
-void        LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
-void        LTDC_Init(void);
-// static void LCD_BriefDisplay(void);
-void        LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
-static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
-
-#if USE_AUDIO_TIMER_VOLUME_CTRL
-static HAL_StatusTypeDef Timer_Init(void);
-#endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
-/* externals  variables -----------------------------------------------*/
-extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
 uint32_t xDebug[100];
 
-/* Private functions ---------------------------------------------------------*/
+#if USE_AUDIO_TIMER_VOLUME_CTRL
+  TIM_HandleTypeDef TimHandle;
+  // Prescaler declaration
+  uint32_t uwPrescalerValue = 0;
+#endif // USE_AUDIO_TIMER_VOLUME_CTRL
+
+// private function prototypes -------------------------------------------------
+// static void OnError_Handler(uint32_t condition);
+// static void LCD_BriefDisplay(void);
+static void     SystemClock_Config(void);
+static void     Display_DemoDescription(void);
+static void     CPU_CACHE_Enable(void);
+static void     LCD_Init(void);
+static void     USB_Init(void);
+void            LCD_UpdateWatchdog(void);
+void            LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
+void            LTDC_Init(void);
+void            LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
+static void     BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
+static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
+
+#if USE_AUDIO_TIMER_VOLUME_CTRL
+  static HAL_StatusTypeDef Timer_Init(void);
+#endif // USE_AUDIO_TIMER_VOLUME_CTRL
+
+// external variables ----------------------------------------------------------
+extern  USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
+
+// private functions -----------------------------------------------------------
+
 /**
  * @brief  Main program
  * @param  None
@@ -94,34 +96,39 @@ int main(void)
 {
 	memset(xDebug, 0, sizeof xDebug);
 
-	// enables the CPU cache
 	CPU_CACHE_Enable();
 
 	/* STM32F7xx HAL library initialization:
-	     - Configure the Flash ART accelerator on ITCM interface
-	     - Configure the Systick to generate an interrupt each 1 msec
-	     - Set NVIC Group Priority to 4
-	     - Low Level Initialization
-	 */
+     - Configures the Flash ART accelerator on ITCM interface
+     - Configures the Systick to generate an interrupt each 1 msec
+     - Sets NVIC Group Priority to 4
+     - Low Level Initialization
+  */
 	HAL_Init();
 
 	// configures the system clock to have a frequency of 200 MHz
 	SystemClock_Config();
 
-	// BSP_LED_Init(LED1);
 	BSP_SDRAM_Init();
 	LCD_Init();
 	Touchscreen_Init();
 
 	USB_Init();
-//	Touchscreen_demo1();
 
-#if USE_AUDIO_TIMER_VOLUME_CTRL
-	/* Configure timer for volume control handling */
-	Timer_Init();
-#endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
+	USART1_UART_Init();
 
-	/* Infinite loop */
+	uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
+	HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
+
+  #if USE_AUDIO_TIMER_VOLUME_CTRL
+    // configures timer for volume control handling 
+    Timer_Init();
+  #endif // USE_AUDIO_TIMER_VOLUME_CTRL 
+
+	int32_t messageCounter = 0;
+	uint8_t messageCounterString[100];
+
+	// Infinite loop 
 	while (1)
 	{
 		if(++touchscreenTimer > 10)
@@ -136,13 +143,29 @@ int main(void)
 			shouldPrintSamples = false;
 		}
 
-		if(++watchdogTimer > 10)
-		{
+		if(++watchdogTimer > 10000)
+		{	
+			uint8_t stringSize = sprintf((char*)messageCounterString, "Horoscope [architecture-fix] with BSP via Serial (%i)\r\n", (int)messageCounter);
+			HAL_UART_Transmit(&UART1_Handle, messageCounterString, stringSize, 10);
+     	messageCounter++;
+
 			LCD_UpdateWatchdog();
 			watchdogTimer = 0;
 		}
 	}
 }
+
+/**
+ * @brief  CPU L1-Cache enable.
+ * @param  None
+ * @retval None
+ */
+static void CPU_CACHE_Enable(void)
+{
+	SCB_EnableICache();
+	SCB_EnableDCache();
+}
+
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 
@@ -153,7 +176,7 @@ int main(void)
  */
 static HAL_StatusTypeDef Timer_Init(void)
 {
-	/*##-1- Configure the TIM peripheral #######################################*/
+	//##-1- Configure the TIM peripheral #######################################
 	/* -----------------------------------------------------------------------
 	   In this example TIM3 input clock (TIM3CLK)  is set to APB1 clock (PCLK1) x2,
 	   since APB1 prescaler is equal to 4.
@@ -174,10 +197,10 @@ static HAL_StatusTypeDef Timer_Init(void)
 	    3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
 	   ----------------------------------------------------------------------- */
 
-	/* Compute the prescaler value to have TIM_VolumeChange counter clock equal to 10000 Hz */
+	// Compute the prescaler value to have TIM_VolumeChange counter clock equal to 10000 Hz 
 	uwPrescalerValue = (uint32_t)((SystemCoreClock / 2) / 10000) - 1;
 
-	/* Set TIM_VolumeChange instance */
+	// Set TIM_VolumeChange instance 
 	TimHandle.Instance = TIM_VolumeChange;
 
 	/* Initialize TIM_VolumeChange peripheral as follows:
@@ -194,20 +217,20 @@ static HAL_StatusTypeDef Timer_Init(void)
 
 	if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
 	{
-		/* Initialization Error */
+		// Initialization Error 
 		Error_Handler();
 	}
 
-	/*##-2- Start the TIM Base generation in interrupt mode ####################*/
-	/* Start Channel1 */
+	//##-2- Start the TIM Base generation in interrupt mode ####################
+	// Start Channel1 
 	if (HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
 	{
-		/* Starting Error */
+		// Starting Error 
 		Error_Handler();
 	}
 	return HAL_OK;
 }
-#endif /* USE_AUDIO_TIMER_VOLUME_CTRL */
+#endif // USE_AUDIO_TIMER_VOLUME_CTRL 
 
 /**
  * @brief  System Clock Configuration
@@ -236,7 +259,7 @@ void SystemClock_Config(void)
 	RCC_OscInitTypeDef RCC_OscInitStruct;
 	RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 
-	/* Enable HSE Oscillator and activate PLL with HSE as source */
+	// Enable HSE Oscillator and activate PLL with HSE as source 
 	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 //	RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
@@ -251,13 +274,13 @@ void SystemClock_Config(void)
 	if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
 		Error_Handler();
 
-	/* Select PLLSAI output as USB clock source */
+	// Select PLLSAI output as USB clock source 
 	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CLK48;
 	PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
 	if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)  != HAL_OK)
 		Error_Handler();
 
-	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers */
+	// Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers 
 	RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
@@ -275,7 +298,7 @@ void SystemClock_Config(void)
  */
 void Error_Handler(void)
 {
-	/* User may add here some code to deal with this error */
+	// User may add here some code to deal with this error 
 	while(1)
 	{
 	}
@@ -299,19 +322,6 @@ void USBD_error_handler(void)
 //	}
 //}
 
-/**
- * @brief  CPU L1-Cache enable.
- * @param  None
- * @retval None
- */
-static void CPU_CACHE_Enable(void)
-{
-	/* Enable I-Cache */
-	SCB_EnableICache();
-
-	/* Enable D-Cache */
-	SCB_EnableDCache();
-}
 
 /**
  * @brief  Initializes the DSI LCD.
@@ -330,7 +340,7 @@ static void LCD_Init(void)
 	lcd_status = BSP_LCD_Init();
 	while(lcd_status != LCD_OK);
 
-	/* Initialize LTDC layer 0 iused for Hint */
+	// Initialize LTDC layer 0 iused for Hint 
 	LCD_LayertInit(0, LAYER0_ADDRESS);
 	BSP_LCD_SelectLayer(0);
 
@@ -396,23 +406,22 @@ static void USB_Init(void)
 	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 
-	/* Init Device Library */
+	// Init Device Library 
 	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"USB Device Library ..... ", LEFT_MODE);
 	USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
 	BSP_LCD_DisplayStringAt(420, 10, (uint8_t *)"OK", LEFT_MODE);
 
-	/* Add Supported Class */
+	// Add Supported Class 
 	BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"USB Register Class ..... ", LEFT_MODE);
 	USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
 	BSP_LCD_DisplayStringAt(420, 30, (uint8_t *)"OK", LEFT_MODE);
 
-
-	/* Add Interface callbacks for AUDIO Class */
+	// Add Interface callbacks for AUDIO Class 
 	BSP_LCD_DisplayStringAt(0, 50, (uint8_t *)"USB Register Interface . ", LEFT_MODE);
 	USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
 	BSP_LCD_DisplayStringAt(420, 50, (uint8_t *)"OK", LEFT_MODE);
 
-	/* Start Device Process */
+	// Start Device Process 
 	BSP_LCD_DisplayStringAt(0, 70, (uint8_t *)"USB Init ............... ", LEFT_MODE);
 	USBD_Start(&USBD_Device);
 	BSP_LCD_DisplayStringAt(420, 70, (uint8_t *)"OK", LEFT_MODE);
@@ -426,11 +435,11 @@ static void USB_Init(void)
  */
 void LTDC_Init(void)
 {
-	/* DeInit */
+	// DeInit 
 	HAL_LTDC_DeInit(&hltdc_discovery);
 
-	/* LTDC Config */
-	/* Timing and polarity */
+	// LTDC Config 
+	// Timing and polarity 
 	hltdc_discovery.Init.HorizontalSync = HSYNC;
 	hltdc_discovery.Init.VerticalSync = VSYNC;
 	hltdc_discovery.Init.AccumulatedHBP = HSYNC + HBP;
@@ -440,12 +449,12 @@ void LTDC_Init(void)
 	hltdc_discovery.Init.TotalHeigh = VSYNC + VBP + VACT + VFP;
 	hltdc_discovery.Init.TotalWidth = HSYNC + HBP + HACT + HFP;
 
-	/* background value */
+	// background value 
 	hltdc_discovery.Init.Backcolor.Blue = 0;
 	hltdc_discovery.Init.Backcolor.Green = 0;
 	hltdc_discovery.Init.Backcolor.Red = 0;
 
-	/* Polarity */
+	// Polarity 
 	hltdc_discovery.Init.HSPolarity = LTDC_HSPOLARITY_AL;
 	hltdc_discovery.Init.VSPolarity = LTDC_VSPOLARITY_AL;
 	hltdc_discovery.Init.DEPolarity = LTDC_DEPOLARITY_AL;
@@ -484,7 +493,7 @@ void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
 {
 	LCD_LayerCfgTypeDef Layercfg;
 
-	/* Layer Init */
+	// Layer Init 
 	Layercfg.WindowX0 = 0;
 	Layercfg.WindowX1 = BSP_LCD_GetXSize() / 2;
 	Layercfg.WindowY0 = 0;
@@ -564,39 +573,39 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
 	HAL_StatusTypeDef hal_status = HAL_OK;
 	uint8_t lcd_status = LCD_ERROR;
 
-	/* Configure the DMA2D Mode, Color Mode and output offset */
+	// Configure the DMA2D Mode, Color Mode and output offset 
 	hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
-	hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;/* Output color out of PFC */
-	hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; /* No Output Alpha Inversion*/
-	hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;/* No Output Red & Blue swap */
+	hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;// Output color out of PFC 
+	hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; // No Output Alpha Inversion
+	hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;// No Output Red & Blue swap 
 
-	/* Output offset in pixels == nb of pixels to be added at end of line to come to the  */
-	/* first pixel of the next line : on the output side of the DMA2D computation         */
+	// Output offset in pixels == nb of pixels to be added at end of line to come to the  
+	// first pixel of the next line : on the output side of the DMA2D computation         
 	// TODO: GENERALIZE
 	hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
 
-	/* Foreground Configuration */
+	// Foreground Configuration 
 	hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-	hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; /* fully opaque */
+	hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; // fully opaque 
 	hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
 	hdma2d_discovery.LayerCfg[1].InputOffset = 0;
-	hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; /* No ForeGround Red/Blue swap */
-	hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; /* No ForeGround Alpha inversion */
+	hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; // No ForeGround Red/Blue swap 
+	hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; // No ForeGround Alpha inversion 
 
 	hdma2d_discovery.Instance = DMA2D;
 
-	/* DMA2D Initialization */
+	// DMA2D Initialization 
 	if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
 	{
 		if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
 		{
 			if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
 			{
-				/* Polling For DMA transfer */
+				// Polling For DMA transfer 
 				hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
 				if(hal_status == HAL_OK)
 				{
-					/* return good status on exit */
+					// return good status on exit 
 					lcd_status = LCD_OK;
 				}
 			}
@@ -619,11 +628,11 @@ void assert_failed(uint8_t* file, uint32_t line)
 	/* User can add his own implementation to report the file name and line number,
 	   ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 
-	/* Infinite loop */
+	// Infinite loop 
 	while (1)
 	{
 	}
 }
 #endif
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+//*********************** (C) COPYRIGHT STMicroelectronics *****END OF FILE***

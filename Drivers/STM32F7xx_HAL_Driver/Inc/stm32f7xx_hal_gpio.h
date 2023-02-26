@@ -60,23 +60,15 @@
 /** 
   * @brief GPIO Init structure definition  
   */ 
-typedef struct
+typedef struct GPIO_Init
 {
-  uint32_t Pin;       /*!< Specifies the GPIO pins to be configured.
-                           This parameter can be any value of @ref GPIO_pins_define */
-
-  uint32_t Mode;      /*!< Specifies the operating mode for the selected pins.
-                           This parameter can be a value of @ref GPIO_mode_define */
-
-  uint32_t Pull;      /*!< Specifies the Pull-up or Pull-Down activation for the selected pins.
-                           This parameter can be a value of @ref GPIO_pull_define */
-
-  uint32_t Speed;     /*!< Specifies the speed for the selected pins.
-                           This parameter can be a value of @ref GPIO_speed_define */
-
-  uint32_t Alternate;  /*!< Peripheral to be connected to the selected pins. 
-                            This parameter can be a value of @ref GPIO_Alternate_function_selection */
-}GPIO_InitTypeDef;
+  uint32_t Pin;       // Specifies the GPIO pins to be configured. This parameter can be any value of GPIO_pins_define
+  uint32_t Mode;      // Specifies the operating mode for the selected pins. This parameter can be a value of GPIO_mode_define
+  uint32_t Pull;      // Specifies the Pull-up or Pull-Down activation for the selected pins. This parameter can be a value of GPIO_pull_define
+  uint32_t Speed;     // Specifies the speed for the selected pins. This parameter can be a value of GPIO_speed_define 
+  uint32_t Alternate; // Peripheral to be connected to the selected pins. This parameter can be a value of GPIO_Alternate_function_selection
+}
+GPIO_InitTypeDef;
 
 /** 
   * @brief  GPIO Bit SET and Bit RESET enumeration 
