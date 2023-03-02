@@ -1,40 +1,10 @@
 // includes --------------------------------------------------------------------
 #include "main.h"
-#include "utfprlogo.h"
 #include "stlogo.h"
 #include "usb_audio.h"
 #include "usart.h"
 
-
-// external typedefs -----------------------------------------------------------
-extern LTDC_HandleTypeDef hltdc_discovery;
-extern DSI_HandleTypeDef hdsi_discovery;
-
-// private typedefs ------------------------------------------------------------
-DSI_VidCfgTypeDef hdsivideo_handle;
-DSI_CmdCfgTypeDef CmdCfg;
-DSI_LPCmdTypeDef LPCmd;
-DSI_PLLInitTypeDef dsiPllInit;
-
-// private defines -------------------------------------------------------------
-#define VSYNC             1
-#define VBP               1
-#define VFP               1
-#define VACT              480
-#define HSYNC             1
-#define HBP               1
-#define HFP               1
-#define HACT              400 // screen divided into two areas
-
-#define LAYER0_ADDRESS    (LCD_FB_START_ADDRESS)
-
-#define INVALID_AREA      0
-#define LEFT_AREA         1
-#define RIGHT_AREA        2
-#define WVGA_RES_X        800
-#define WVGA_RES_Y        480
-
-// private macros --------------------------------------------------------------
+#include "user_lcd.h"
 
 // private variables -----------------------------------------------------------
 USBD_HandleTypeDef USBD_Device;
@@ -43,7 +13,7 @@ USBD_HandleTypeDef USBD_Device;
 // static uint32_t ImageIndex      = 0;
 uint32_t watchdogTimer    = 0;
 uint32_t watchdogCounter  = 0;
-uint32_t serialTimer 	    = 0;
+uint32_t serialTimer 	  = 0;
 uint32_t touchscreenTimer = 0;
 bool shouldPrintSamples   = true;
 float in_z1               = 0;
@@ -66,18 +36,11 @@ uint32_t xDebug[100];
 
 // private function prototypes -------------------------------------------------
 // static void OnError_Handler(uint32_t condition);
-// static void LCD_BriefDisplay(void);
 static void     SystemClock_Config(void);
-static void     Display_DemoDescription(void);
 static void     CPU_CACHE_Enable(void);
-static void     LCD_Init(void);
 static void     USB_Init(void);
 void            LCD_UpdateWatchdog(void);
-void            LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
-void            LTDC_Init(void);
 void            LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
-static void     BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
-static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
   static HAL_StatusTypeDef Timer_Init(void);
@@ -111,12 +74,17 @@ int main(void)
     SystemClock_Config();
 
     BSP_SDRAM_Init();
-    LCD_Init();
-    Touchscreen_Init();
 
     USB_Init();
 
+    HAL_Delay(1000);
+
     USART1_UART_Init();
+
+
+    LCD_Init();
+    Touchscreen_Init();
+
 
     uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
     HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
@@ -328,46 +296,16 @@ void USBD_error_handler(void)
 //}
 
 
-/**
- * @brief  Initializes the DSI LCD.
- * The ititialization is done as below:
- *     - DSI PLL ititialization
- *     - DSI ititialization
- *     - LTDC ititialization
- *     - OTM8009A LCD Display IC Driver ititialization
- * @param  None
- * @retval LCD state
- */
-static void LCD_Init(void)
-{
-    uint8_t lcd_status = LCD_OK;
-
-    lcd_status = BSP_LCD_Init();
-    while(lcd_status != LCD_OK);
-
-    // Initialize LTDC layer 0 iused for Hint 
-    LCD_LayertInit(0, LAYER0_ADDRESS);
-    BSP_LCD_SelectLayer(0);
-
-    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
-
-    BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-    Display_DemoDescription();
-}
-
 void LCD_UpdateWatchdog (void)
 {
-
-    char text[5];
-    sprintf(text, "%04u", ((unsigned int)watchdogCounter));
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-    // BSP_LCD_DisplayStringAt(50, 10, (uint8_t *)"OIEEE", CENTER_MODE);
-    watchdogCounter++;
-    if(watchdogCounter > 9999)
-        watchdogCounter = 0;
+	char text[5];
+	sprintf(text, "%04u", ((unsigned int)watchdogCounter));
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
+	watchdogCounter++;
+	if(watchdogCounter > 9999)
+		watchdogCounter = 0;
 }
 
 void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
@@ -431,193 +369,6 @@ static void USB_Init(void)
     USBD_Start(&USBD_Device);
     BSP_LCD_DisplayStringAt(420, 70, (uint8_t *)"OK", LEFT_MODE);
 
-}
-
-/**
- * @brief  Initialize the LTDC
- * @param  None
- * @retval None
- */
-void LTDC_Init(void)
-{
-    // DeInit 
-    HAL_LTDC_DeInit(&hltdc_discovery);
-
-    // LTDC Config 
-    // Timing and polarity 
-    hltdc_discovery.Init.HorizontalSync = HSYNC;
-    hltdc_discovery.Init.VerticalSync = VSYNC;
-    hltdc_discovery.Init.AccumulatedHBP = HSYNC + HBP;
-    hltdc_discovery.Init.AccumulatedVBP = VSYNC + VBP;
-    hltdc_discovery.Init.AccumulatedActiveH = VSYNC + VBP + VACT;
-    hltdc_discovery.Init.AccumulatedActiveW = HSYNC + HBP + HACT;
-    hltdc_discovery.Init.TotalHeigh = VSYNC + VBP + VACT + VFP;
-    hltdc_discovery.Init.TotalWidth = HSYNC + HBP + HACT + HFP;
-
-    // background value 
-    hltdc_discovery.Init.Backcolor.Blue = 0;
-    hltdc_discovery.Init.Backcolor.Green = 0;
-    hltdc_discovery.Init.Backcolor.Red = 0;
-
-    // Polarity 
-    hltdc_discovery.Init.HSPolarity = LTDC_HSPOLARITY_AL;
-    hltdc_discovery.Init.VSPolarity = LTDC_VSPOLARITY_AL;
-    hltdc_discovery.Init.DEPolarity = LTDC_DEPOLARITY_AL;
-    hltdc_discovery.Init.PCPolarity = LTDC_PCPOLARITY_IPC;
-    hltdc_discovery.Instance = LTDC;
-
-    HAL_LTDC_Init(&hltdc_discovery);
-}
-
-///**
-// * @brief  Display Example description.
-// * @param  None
-// * @retval None
-// */
-//static void LCD_BriefDisplay(void)
-//{
-//	BSP_LCD_SetFont(&Font24);
-//	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-//	BSP_LCD_FillRect(0, 0, 800, 112);
-//	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-//	BSP_LCD_FillRect(0, 112, 800, 368);
-//	BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
-//	BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"        LCD_DSI_CmdMode_PartialRefresh");
-//	BSP_LCD_SetFont(&Font16);
-//	BSP_LCD_DisplayStringAtLine(4, (uint8_t *)"This example shows how to display images on LCD DSI using the partial");
-//	BSP_LCD_DisplayStringAtLine(5, (uint8_t *)"Refresh method by splitting the display area.");
-//}
-
-/**
- * @brief  Initializes the LCD layers.
- * @param  LayerIndex: Layer foreground or background
- * @param  FB_Address: Layer frame buffer
- * @retval None
- */
-void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
-{
-    LCD_LayerCfgTypeDef Layercfg;
-
-    // Layer Init 
-    Layercfg.WindowX0 = 0;
-    Layercfg.WindowX1 = BSP_LCD_GetXSize() / 2;
-    Layercfg.WindowY0 = 0;
-    Layercfg.WindowY1 = BSP_LCD_GetYSize();
-    Layercfg.PixelFormat = LTDC_PIXEL_FORMAT_ARGB8888;
-    Layercfg.FBStartAdress = Address;
-    Layercfg.Alpha = 255;
-    Layercfg.Alpha0 = 0;
-    Layercfg.Backcolor.Blue = 0;
-    Layercfg.Backcolor.Green = 0;
-    Layercfg.Backcolor.Red = 0;
-    Layercfg.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-    Layercfg.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-    Layercfg.ImageWidth = BSP_LCD_GetXSize() / 2;
-    Layercfg.ImageHeight = BSP_LCD_GetYSize();
-
-    HAL_LTDC_ConfigLayer(&hltdc_discovery, &Layercfg, LayerIndex);
-}
-
-static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
-{
-    CopyImageToLcdFrameBuffer((void*)image, (void*)(LCD_FRAME_BUFFER), width, height, xPosition, yPosition);
-}
-
-static void Display_DemoDescription(void)
-{
-
-    // sets lcd foreground layer
-    BSP_LCD_SelectLayer(0);
-
-    // clears the lcd
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-    // sets the lcd text color and font
-    BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
-    BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
-
-    // displays header messages
-    // BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-    // BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
-
-    // displays footer
-    BSP_LCD_SetFont(&Font12);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Apple Pie - commit b1bb6358", CENTER_MODE);
-
-    // draws logo picture
-    BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 80);
-
-    // displays content messages
-    BSP_LCD_SetFont(&Font24);
-    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-    BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
-
-    BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Filtros | Touch Inicial", CENTER_MODE);
-
-}
-
-/**
- * @brief  Copy and convert image (LAYER_SIZE_X, LAYER_SIZE_Y) of format RGB565
- * to LCD frame buffer area centered in WVGA resolution.
- * The area of copy is of size (LAYER_SIZE_X, LAYER_SIZE_Y) in ARGB8888.
- * @param  pSrc: Pointer to source buffer : source image buffer start here
- * @param  pDst: Pointer to destination buffer LCD frame buffer center area start here
- * @param  xSize: Buffer width (LAYER_SIZE_X here)
- * @param  ySize: Buffer height (LAYER_SIZE_Y here)
- * @retval LCD Status : LCD_OK or LCD_ERROR
- */
-static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y)
-{
-
-    uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
-    DMA2D_HandleTypeDef hdma2d_discovery;
-    HAL_StatusTypeDef hal_status = HAL_OK;
-    uint8_t lcd_status = LCD_ERROR;
-
-    // Configure the DMA2D Mode, Color Mode and output offset 
-    hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
-    hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;// Output color out of PFC 
-    hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; // No Output Alpha Inversion
-    hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;// No Output Red & Blue swap 
-
-    // Output offset in pixels == nb of pixels to be added at end of line to come to the  
-    // first pixel of the next line : on the output side of the DMA2D computation         
-    // TODO: GENERALIZE
-    hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
-
-    // Foreground Configuration 
-    hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-    hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; // fully opaque 
-    hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
-    hdma2d_discovery.LayerCfg[1].InputOffset = 0;
-    hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; // No ForeGround Red/Blue swap 
-    hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; // No ForeGround Alpha inversion 
-
-    hdma2d_discovery.Instance = DMA2D;
-
-    // DMA2D Initialization 
-    if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
-    {
-        if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
-        {
-            if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
-            {
-                // Polling For DMA transfer 
-                hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
-                if(hal_status == HAL_OK)
-                {
-                    // return good status on exit 
-                    lcd_status = LCD_OK;
-                }
-            }
-        }
-    }
-
-    return(lcd_status);
 }
 
 #ifdef  USE_FULL_ASSERT
