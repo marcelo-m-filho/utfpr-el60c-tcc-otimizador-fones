@@ -462,61 +462,7 @@ static uint32_t Touchscreen_Handle_NewTouch(void)
 	return(ts_status);
 }
 
-#endif /* TS_MULTI_TOUCH_SUPPORTED == 1 */
-
-/**
- * @brief  Display TS Demo Hint for all touchscreen demos depending on passed
- *         demoIndex in parameter.
- * @param  demoIndex : parameter of type @ref TouchScreenDemoTypeDef
- * @retval None
- */
-//static void Touchscreen_SetHint_Demo(TouchScreenDemoTypeDef demoIndex)
-//{
-//	if(demoIndex <= TOUCHSCREEN_DEMO_MAX)
-//	{
-//		/* Clear the LCD */
-//		BSP_LCD_Clear(LCD_COLOR_WHITE);
-//
-//		/* Set Touchscreen Demo1 description */
-//		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-//		BSP_LCD_FillRect(0, 0, BSP_LCD_GetXSize(), 80);
-//		BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-//		BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
-//		BSP_LCD_SetFont(&Font24);
-//
-//		if(demoIndex == TOUCHSCREEN_DEMO_1)
-//		{
-//			BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)"HOP basic polling", CENTER_MODE);
-//			BSP_LCD_SetFont(&Font12);
-//			BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"Please use the Touchscreen to", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 45, (uint8_t *)"activate the colored circle", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"inside the rectangle. Then press User button", CENTER_MODE);
-//		}
-//		else if (demoIndex == TOUCHSCREEN_DEMO_2)
-//		{
-//			BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)"Touchscreen dual touch polling", CENTER_MODE);
-//			BSP_LCD_SetFont(&Font12);
-//			BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"Please press the Touchscreen to", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 45, (uint8_t *)"activate single and", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"dual touch", CENTER_MODE);
-//
-//		}
-//		else /* demoIndex == TOUCHSCREEN_DEMO_3 */
-//		{
-//			BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)"Touchscreen dual touch interrupt", CENTER_MODE);
-//			BSP_LCD_SetFont(&Font12);
-//			BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"Please press the Touchscreen to", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 45, (uint8_t *)"activate single and", CENTER_MODE);
-//			BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"dual touch", CENTER_MODE);
-//		}
-//
-//		/* Set the LCD Text Color */
-//		BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-//		BSP_LCD_DrawRect(10, 90, BSP_LCD_GetXSize() - 20, BSP_LCD_GetYSize() - 100);
-//		BSP_LCD_DrawRect(11, 91, BSP_LCD_GetXSize() - 22, BSP_LCD_GetYSize() - 102);
-//
-//	} /* of if(demoIndex <= TOUCHSCREEN_DEMO_MAX) */
-//}
+#endif // TS_MULTI_TOUCH_SUPPORTED == 1
 
 /**
  * @brief  Draw Touchscreen Background

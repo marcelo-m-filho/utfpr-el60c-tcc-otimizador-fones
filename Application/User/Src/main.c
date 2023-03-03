@@ -15,7 +15,7 @@ uint32_t watchdogTimer    = 0;
 uint32_t watchdogCounter  = 0;
 uint32_t serialTimer 	  = 0;
 uint32_t touchscreenTimer = 0;
-bool shouldPrintSamples   = true;
+bool shouldPrintSamples   = false;
 float in_z1               = 0;
 float in_z2               = 0;
 float out_z1              = 0;
@@ -39,8 +39,6 @@ uint32_t xDebug[100];
 static void     SystemClock_Config(void);
 static void     CPU_CACHE_Enable(void);
 static void     USB_Init(void);
-void            LCD_UpdateWatchdog(void);
-void            LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
   static HAL_StatusTypeDef Timer_Init(void);
@@ -74,14 +72,11 @@ int main(void)
     SystemClock_Config();
 
     BSP_SDRAM_Init();
-
     USB_Init();
 
     HAL_Delay(1000);
 
     USART1_UART_Init();
-
-
     LCD_Init();
     Touchscreen_Init();
 
@@ -122,7 +117,7 @@ int main(void)
 
         if(++watchdogTimer > 10)
         {	
-            LCD_UpdateWatchdog();
+            LCD_UpdateWatchdog(&watchdogCounter);
             watchdogTimer = 0;
         }
     }
@@ -294,55 +289,6 @@ void USBD_error_handler(void)
 //		while(1); // blocking on error
 //	}
 //}
-
-
-void LCD_UpdateWatchdog (void)
-{
-	char text[5];
-	sprintf(text, "%04u", ((unsigned int)watchdogCounter));
-	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-	watchdogCounter++;
-	if(watchdogCounter > 9999)
-		watchdogCounter = 0;
-}
-
-void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
-{
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-    for(uint8_t position = 0; position < columns; position++)
-    {
-        uint32_t yOffset = 100 + 18 * position;
-        char desc[200];
-
-        if(printAsShort)
-        {
-            sprintf(
-                desc,
-                "%06i|%06i",
-                ((int16_t)xDebug[2 * position + 0]),
-                ((int16_t)xDebug[2 * position + 1])
-                );
-        }
-        else
-        {
-            sprintf(
-                desc,
-                "%04i|%04i|%04i|%04i",
-                ((int8_t)xDebug[4 * position + 0]),
-                ((int8_t)xDebug[4 * position + 1]),
-                ((int8_t)xDebug[4 * position + 2]),
-                ((int8_t)xDebug[4 * position + 3])
-                );
-        }
-
-        BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
-    }
-
-}
 
 static void USB_Init(void)
 {

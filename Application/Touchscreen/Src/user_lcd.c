@@ -1,6 +1,5 @@
 #include "user_lcd.h"
 
-
 // pictures -----------------------------------------------------------
 #include "utfprlogo.h"
 
@@ -28,14 +27,14 @@
 #define LAYER_BYTE_PER_PIXEL    RGB565_BYTE_PER_PIXEL
 
 // private function declarations --------------------------------------
-static void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
-static void Display_StartupScreen(void);
+static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
+static void     Display_StartupScreen(void);
 static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
 
 
 // external variable declarations -------------------------------------
 extern LTDC_HandleTypeDef hltdc_discovery;
-
+extern uint32_t           xDebug[100];
 /**
  * @brief  Initializes the DSI LCD.
  * The ititialization is done as below:
@@ -189,6 +188,56 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
   }
 
   return(lcd_status);
+}
+
+void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
+{
+	char text[5];
+	sprintf(text, "%04u", ((unsigned int)*watchdogCounter));
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
+	*watchdogCounter = *watchdogCounter + 1;
+	if(*watchdogCounter > 9999)
+		*watchdogCounter = 0;
+}
+
+
+
+
+void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
+{
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+
+    for(uint8_t position = 0; position < columns; position++)
+    {
+        uint32_t yOffset = 100 + 18 * position;
+        char desc[200];
+
+        if(printAsShort)
+        {
+            sprintf(
+                desc,
+                "%06i|%06i",
+                ((int16_t)xDebug[2 * position + 0]),
+                ((int16_t)xDebug[2 * position + 1])
+                );
+        }
+        else
+        {
+            sprintf(
+                desc,
+                "%04i|%04i|%04i|%04i",
+                ((int8_t)xDebug[4 * position + 0]),
+                ((int8_t)xDebug[4 * position + 1]),
+                ((int8_t)xDebug[4 * position + 2]),
+                ((int8_t)xDebug[4 * position + 3])
+                );
+        }
+
+        BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
+    }
 }
 
 
