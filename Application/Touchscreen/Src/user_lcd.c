@@ -31,6 +31,11 @@ static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 static void     Display_StartupScreen(void);
 static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
 
+// variables ----------------------------------------------------------
+CircleButtonTypeDef circleButtons[] = {
+  { 300, 300, 50, LCD_COLOR_YELLOW, LCD_COLOR_BLACK, "teste", 5, false},
+  { 450, 300, 50, LCD_COLOR_RED,    LCD_COLOR_BLACK, "prova", 5, true}
+};
 
 // external variable declarations -------------------------------------
 extern LTDC_HandleTypeDef hltdc_discovery;
@@ -128,6 +133,8 @@ static void Display_StartupScreen(void)
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Filtros | Touch Inicial", CENTER_MODE);
 
+  LCD_UpdateButton(0);
+  LCD_UpdateButton(1);
 }
 
 /**
@@ -190,20 +197,33 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
   return(lcd_status);
 }
 
-void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
+void LCD_UpdateButton(uint8_t buttonIndex)
 {
-	char text[5];
-	sprintf(text, "%04u", ((unsigned int)*watchdogCounter));
-	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-	BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-	*watchdogCounter = *watchdogCounter + 1;
-	if(*watchdogCounter > 9999)
-		*watchdogCounter = 0;
+  CircleButtonTypeDef button = circleButtons[buttonIndex];
+
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_FillCircle(button.x, button.y, button.radius);
+
+  BSP_LCD_SetTextColor(button.isPressed ? button.color : LCD_COLOR_LIGHTGRAY);
+  BSP_LCD_FillCircle(button.x, button.y, button.radius - 5);
+
+  BSP_LCD_SetTextColor(button.textColor);
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+  BSP_LCD_DisplayStringAt(button.x - (button.radius / 2), button.y - button.radius - 30, (uint8_t *)button.text, LEFT_MODE);
+
 }
 
-
-
+void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
+{
+  char text[5];
+  sprintf(text, "%04u", ((unsigned int)*watchdogCounter));
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
+  *watchdogCounter = *watchdogCounter + 1;
+  if(*watchdogCounter > 9999)
+    *watchdogCounter = 0;
+}
 
 void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
 {
@@ -239,7 +259,6 @@ void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
         BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
     }
 }
-
 
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
 {
