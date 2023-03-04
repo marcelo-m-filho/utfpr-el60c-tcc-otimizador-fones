@@ -1,40 +1,10 @@
 // includes --------------------------------------------------------------------
 #include "main.h"
-#include "utfprlogo.h"
 #include "stlogo.h"
 #include "usb_audio.h"
 #include "usart.h"
 
-
-// external typedefs -----------------------------------------------------------
-extern LTDC_HandleTypeDef hltdc_discovery;
-extern DSI_HandleTypeDef hdsi_discovery;
-
-// private typedefs ------------------------------------------------------------
-DSI_VidCfgTypeDef hdsivideo_handle;
-DSI_CmdCfgTypeDef CmdCfg;
-DSI_LPCmdTypeDef LPCmd;
-DSI_PLLInitTypeDef dsiPllInit;
-
-// private defines -------------------------------------------------------------
-#define VSYNC             1
-#define VBP               1
-#define VFP               1
-#define VACT              480
-#define HSYNC             1
-#define HBP               1
-#define HFP               1
-#define HACT              400 // screen divided into two areas
-
-#define LAYER0_ADDRESS    (LCD_FB_START_ADDRESS)
-
-#define INVALID_AREA      0
-#define LEFT_AREA         1
-#define RIGHT_AREA        2
-#define WVGA_RES_X        800
-#define WVGA_RES_Y        480
-
-// private macros --------------------------------------------------------------
+#include "user_lcd.h"
 
 // private variables -----------------------------------------------------------
 USBD_HandleTypeDef USBD_Device;
@@ -43,9 +13,10 @@ USBD_HandleTypeDef USBD_Device;
 // static uint32_t ImageIndex      = 0;
 uint32_t watchdogTimer    = 0;
 uint32_t watchdogCounter  = 0;
-uint32_t serialTimer 	    = 0;
+uint32_t serialTimer      = 0;
 uint32_t touchscreenTimer = 0;
-bool shouldPrintSamples   = true;
+uint32_t serialSendTimer  = 0;
+bool shouldPrintSamples   = false;
 float in_z1               = 0;
 float in_z2               = 0;
 float out_z1              = 0;
@@ -59,32 +30,24 @@ uint8_t pSyncLeft[]       = {0x02, 0x15};             // Scan @ 533
 uint32_t xDebug[100];
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
-  TIM_HandleTypeDef TimHandle;
-  // Prescaler declaration
-  uint32_t uwPrescalerValue = 0;
+TIM_HandleTypeDef TimHandle;
+// Prescaler declaration
+uint32_t uwPrescalerValue = 0;
 #endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
 // private function prototypes -------------------------------------------------
 // static void OnError_Handler(uint32_t condition);
-// static void LCD_BriefDisplay(void);
 static void     SystemClock_Config(void);
-static void     Display_DemoDescription(void);
 static void     CPU_CACHE_Enable(void);
-static void     LCD_Init(void);
 static void     USB_Init(void);
-void            LCD_UpdateWatchdog(void);
-void            LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
-void            LTDC_Init(void);
-void            LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
-static void     BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition );
-static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
-  static HAL_StatusTypeDef Timer_Init(void);
+static HAL_StatusTypeDef Timer_Init(void);
 #endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
 // external variables ----------------------------------------------------------
-extern  USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
+extern USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
+extern CircleButtonTypeDef circleButtons[];
 
 // private functions -----------------------------------------------------------
 
@@ -95,69 +58,78 @@ extern  USBD_AUDIO_InterfaceCallbacksfTypeDef audio_class_interface;
  */
 int main(void)
 {
-    memset(xDebug, 0, sizeof xDebug);
+	memset(xDebug, 0, sizeof xDebug);
 
-    CPU_CACHE_Enable();
+	CPU_CACHE_Enable();
 
-    /* STM32F7xx HAL library initialization:
-     - Configures the Flash ART accelerator on ITCM interface
-     - Configures the Systick to generate an interrupt each 1 msec
-     - Sets NVIC Group Priority to 4
-     - Low Level Initialization
-  */
-    HAL_Init();
+	/* STM32F7xx HAL library initialization:
+	   - Configures the Flash ART accelerator on ITCM interface
+	   - Configures the Systick to generate an interrupt each 1 msec
+	   - Sets NVIC Group Priority to 4
+	   - Low Level Initialization
+	 */
+	HAL_Init();
 
-    // configures the system clock to have a frequency of 200 MHz
-    SystemClock_Config();
+	// configures the system clock to have a frequency of 200 MHz
+	SystemClock_Config();
 
-    BSP_SDRAM_Init();
-    LCD_Init();
-    Touchscreen_Init();
+	BSP_SDRAM_Init();
+	USB_Init();
 
-    USB_Init();
+	HAL_Delay(1000);
 
-    USART1_UART_Init();
+	USART1_UART_Init();
+	LCD_Init();
+	Touchscreen_Init();
 
-    uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
-    HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
+
+	uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
+	HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
 
   #if USE_AUDIO_TIMER_VOLUME_CTRL
-    // configures timer for volume control handling 
-    Timer_Init();
-  #endif // USE_AUDIO_TIMER_VOLUME_CTRL 
+	// configures timer for volume control handling
+	Timer_Init();
+  #endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
-    int32_t messageCounter = 0;
-    uint8_t messageCounterString[100];
+	int32_t messageCounter = 0;
+	uint8_t messageCounterString[100];
 
-    // Infinite loop 
-    while (1)
+	// Infinite loop
+	while (1)
+	{
+		if(++touchscreenTimer > 10)
+		{
+			Touchscreen_ButtonHandler();
+			touchscreenTimer = 0;
+		}
+
+		if(shouldPrintSamples)
+		{
+			LCD_PrintDebugVariable(20, true);
+			shouldPrintSamples = false;
+		}
+
+    if(circleButtons[5].isPressed && ++serialSendTimer > 10000)
     {
-        if(++touchscreenTimer > 10)
-        {
-            Touchscreen_ButtonHandler();
-            touchscreenTimer = 0;
-        }
-
-        if(shouldPrintSamples)
-        {
-            LCD_PrintDebugVariable(20, true);
-            shouldPrintSamples = false;
-        }
-
-        if(++serialTimer > 1000)
-        {
-          uint8_t stringSize = sprintf((char*)messageCounterString, "Horoscope [architecture-fix] with BSP via Serial (%i)\r\n", (int)messageCounter);
-          HAL_UART_Transmit(&UART1_Handle, messageCounterString, stringSize, 10);
-          messageCounter++;
-          serialTimer = 0;
-        }
-
-        if(++watchdogTimer > 10)
-        {	
-            LCD_UpdateWatchdog();
-            watchdogTimer = 0;
-        }
+      LCD_UpdateButton(5, false, false);
+      serialSendTimer = 0;
     }
+    
+
+		if(++serialTimer > 1000)
+		{
+			uint8_t stringSize = sprintf((char*)messageCounterString, "Horoscope [architecture-fix] with BSP via Serial (%i)\r\n", (int)messageCounter);
+			HAL_UART_Transmit(&UART1_Handle, messageCounterString, stringSize, 10);
+			messageCounter++;
+			serialTimer = 0;
+		}
+
+		if(++watchdogTimer > 10)
+		{
+			LCD_UpdateWatchdog(&watchdogCounter);
+			watchdogTimer = 0;
+		}
+	}
 }
 
 /**
@@ -167,8 +139,8 @@ int main(void)
  */
 static void CPU_CACHE_Enable(void)
 {
-    SCB_EnableICache();
-    SCB_EnableDCache();
+	SCB_EnableICache();
+	SCB_EnableDCache();
 }
 
 
@@ -181,61 +153,61 @@ static void CPU_CACHE_Enable(void)
  */
 static HAL_StatusTypeDef Timer_Init(void)
 {
-    //##-1- Configure the TIM peripheral #######################################
-    /* -----------------------------------------------------------------------
-       In this example TIM3 input clock (TIM3CLK)  is set to APB1 clock (PCLK1) x2,
-       since APB1 prescaler is equal to 4.
-        TIM3CLK = PCLK1*2
-        PCLK1 = HCLK/4
-        => TIM3CLK = HCLK/2 = SystemCoreClock/2
-       To get TIM3 counter clock at 10 KHz, the Prescaler is computed as follows:
-       Prescaler = (TIM3CLK / TIM3 counter clock) - 1
-       Prescaler = ((SystemCoreClock/2) /10 KHz) - 1
+	//##-1- Configure the TIM peripheral #######################################
+	/* -----------------------------------------------------------------------
+	   In this example TIM3 input clock (TIM3CLK)  is set to APB1 clock (PCLK1) x2,
+	   since APB1 prescaler is equal to 4.
+	    TIM3CLK = PCLK1*2
+	    PCLK1 = HCLK/4
+	    => TIM3CLK = HCLK/2 = SystemCoreClock/2
+	   To get TIM3 counter clock at 10 KHz, the Prescaler is computed as follows:
+	   Prescaler = (TIM3CLK / TIM3 counter clock) - 1
+	   Prescaler = ((SystemCoreClock/2) /10 KHz) - 1
 
-       Note:
-       SystemCoreClock variable holds HCLK frequency and is defined in system_stm32f4xx.c file.
-       Each time the core clock (HCLK) changes, user had to update SystemCoreClock
-       variable value. Otherwise, any configuration based on this variable will be incorrect.
-       This variable is updated in three ways:
-        1) by calling CMSIS function SystemCoreClockUpdate()
-        2) by calling HAL API function HAL_RCC_GetSysClockFreq()
-        3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
-       ----------------------------------------------------------------------- */
+	   Note:
+	   SystemCoreClock variable holds HCLK frequency and is defined in system_stm32f4xx.c file.
+	   Each time the core clock (HCLK) changes, user had to update SystemCoreClock
+	   variable value. Otherwise, any configuration based on this variable will be incorrect.
+	   This variable is updated in three ways:
+	    1) by calling CMSIS function SystemCoreClockUpdate()
+	    2) by calling HAL API function HAL_RCC_GetSysClockFreq()
+	    3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
+	   ----------------------------------------------------------------------- */
 
-    // Compute the prescaler value to have TIM_VolumeChange counter clock equal to 10000 Hz 
-    uwPrescalerValue = (uint32_t)((SystemCoreClock / 2) / 10000) - 1;
+	// Compute the prescaler value to have TIM_VolumeChange counter clock equal to 10000 Hz
+	uwPrescalerValue = (uint32_t)((SystemCoreClock / 2) / 10000) - 1;
 
-    // Set TIM_VolumeChange instance 
-    TimHandle.Instance = TIM_VolumeChange;
+	// Set TIM_VolumeChange instance
+	TimHandle.Instance = TIM_VolumeChange;
 
-    /* Initialize TIM_VolumeChange peripheral as follows:
-     + Period = 1000 - 1
-     + Prescaler = ((SystemCoreClock / 2)/10000) - 1
-     + ClockDivision = 0
-     + Counter direction = Up
-     */
-    TimHandle.Init.Period            = 1000 - 1;
-    TimHandle.Init.Prescaler         = uwPrescalerValue;
-    TimHandle.Init.ClockDivision     = 0;
-    TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    TimHandle.Init.RepetitionCounter = 0;
+	/* Initialize TIM_VolumeChange peripheral as follows:
+	 + Period = 1000 - 1
+	 + Prescaler = ((SystemCoreClock / 2)/10000) - 1
+	 + ClockDivision = 0
+	 + Counter direction = Up
+	 */
+	TimHandle.Init.Period            = 1000 - 1;
+	TimHandle.Init.Prescaler         = uwPrescalerValue;
+	TimHandle.Init.ClockDivision     = 0;
+	TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+	TimHandle.Init.RepetitionCounter = 0;
 
-    if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
-    {
-        // Initialization Error 
-        Error_Handler();
-    }
+	if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+	{
+		// Initialization Error
+		Error_Handler();
+	}
 
-    //##-2- Start the TIM Base generation in interrupt mode ####################
-    // Start Channel1 
-    if (HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
-    {
-        // Starting Error 
-        Error_Handler();
-    }
-    return HAL_OK;
+	//##-2- Start the TIM Base generation in interrupt mode ####################
+	// Start Channel1
+	if (HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
+	{
+		// Starting Error
+		Error_Handler();
+	}
+	return HAL_OK;
 }
-#endif // USE_AUDIO_TIMER_VOLUME_CTRL 
+#endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
 /**
  * @brief  System Clock Configuration
@@ -260,40 +232,40 @@ static HAL_StatusTypeDef Timer_Init(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_ClkInitTypeDef RCC_ClkInitStruct;
-    RCC_OscInitTypeDef RCC_OscInitStruct;
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
+	RCC_ClkInitTypeDef RCC_ClkInitStruct;
+	RCC_OscInitTypeDef RCC_OscInitStruct;
+	RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
 
-    // Enable HSE Oscillator and activate PLL with HSE as source 
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	// Enable HSE Oscillator and activate PLL with HSE as source
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 //	RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLM = 25;
-    RCC_OscInitStruct.PLL.PLLN = 400;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ = 8;
-    RCC_OscInitStruct.PLL.PLLR = 7;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLM = 25;
+	RCC_OscInitStruct.PLL.PLLN = 400;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLQ = 8;
+	RCC_OscInitStruct.PLL.PLLR = 7;
 
-    if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-        Error_Handler();
+	if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+		Error_Handler();
 
-    // Select PLLSAI output as USB clock source 
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CLK48;
-    PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
-    if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)  != HAL_OK)
-        Error_Handler();
+	// Select PLLSAI output as USB clock source
+	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CLK48;
+	PeriphClkInitStruct.Clk48ClockSelection = RCC_CLK48SOURCE_PLL;
+	if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)  != HAL_OK)
+		Error_Handler();
 
-    // Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers 
-    RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+	// Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 clocks dividers
+	RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-    if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
-        Error_Handler();
+	if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
+		Error_Handler();
 }
 
 /**
@@ -303,14 +275,14 @@ void SystemClock_Config(void)
  */
 void Error_Handler(void)
 {
-    // User may add here some code to deal with this error 
-    while(1)
-    {
-    }
+	// User may add here some code to deal with this error
+	while(1)
+	{
+	}
 }
 void USBD_error_handler(void)
 {
-    Error_Handler();
+	Error_Handler();
 }
 
 ///**
@@ -327,297 +299,31 @@ void USBD_error_handler(void)
 //	}
 //}
 
-
-/**
- * @brief  Initializes the DSI LCD.
- * The ititialization is done as below:
- *     - DSI PLL ititialization
- *     - DSI ititialization
- *     - LTDC ititialization
- *     - OTM8009A LCD Display IC Driver ititialization
- * @param  None
- * @retval LCD state
- */
-static void LCD_Init(void)
-{
-    uint8_t lcd_status = LCD_OK;
-
-    lcd_status = BSP_LCD_Init();
-    while(lcd_status != LCD_OK);
-
-    // Initialize LTDC layer 0 iused for Hint 
-    LCD_LayertInit(0, LAYER0_ADDRESS);
-    BSP_LCD_SelectLayer(0);
-
-    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
-
-    BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-    Display_DemoDescription();
-}
-
-void LCD_UpdateWatchdog (void)
-{
-
-    char text[5];
-    sprintf(text, "%04u", ((unsigned int)watchdogCounter));
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-    // BSP_LCD_DisplayStringAt(50, 10, (uint8_t *)"OIEEE", CENTER_MODE);
-    watchdogCounter++;
-    if(watchdogCounter > 9999)
-        watchdogCounter = 0;
-}
-
-void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
-{
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-    for(uint8_t position = 0; position < columns; position++)
-    {
-        uint32_t yOffset = 100 + 18 * position;
-        char desc[200];
-
-        if(printAsShort)
-        {
-            sprintf(
-                desc,
-                "%06i|%06i",
-                ((int16_t)xDebug[2 * position + 0]),
-                ((int16_t)xDebug[2 * position + 1])
-                );
-        }
-        else
-        {
-            sprintf(
-                desc,
-                "%04i|%04i|%04i|%04i",
-                ((int8_t)xDebug[4 * position + 0]),
-                ((int8_t)xDebug[4 * position + 1]),
-                ((int8_t)xDebug[4 * position + 2]),
-                ((int8_t)xDebug[4 * position + 3])
-                );
-        }
-
-        BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
-    }
-
-}
-
 static void USB_Init(void)
 {
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
 
-    // Init Device Library 
-    BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"USB Device Library ..... ", LEFT_MODE);
-    USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
-    BSP_LCD_DisplayStringAt(420, 10, (uint8_t *)"OK", LEFT_MODE);
+	// Init Device Library
+	BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"USB Device Library ..... ", LEFT_MODE);
+	USBD_Init(&USBD_Device, &AUDIO_Desc, 0);
+	BSP_LCD_DisplayStringAt(420, 10, (uint8_t *)"OK", LEFT_MODE);
 
-    // Add Supported Class 
-    BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"USB Register Class ..... ", LEFT_MODE);
-    USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
-    BSP_LCD_DisplayStringAt(420, 30, (uint8_t *)"OK", LEFT_MODE);
+	// Add Supported Class
+	BSP_LCD_DisplayStringAt(0, 30, (uint8_t *)"USB Register Class ..... ", LEFT_MODE);
+	USBD_RegisterClass(&USBD_Device, USBD_AUDIO_CLASS);
+	BSP_LCD_DisplayStringAt(420, 30, (uint8_t *)"OK", LEFT_MODE);
 
-    // Add Interface callbacks for AUDIO Class 
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t *)"USB Register Interface . ", LEFT_MODE);
-    USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
-    BSP_LCD_DisplayStringAt(420, 50, (uint8_t *)"OK", LEFT_MODE);
+	// Add Interface callbacks for AUDIO Class
+	BSP_LCD_DisplayStringAt(0, 50, (uint8_t *)"USB Register Interface . ", LEFT_MODE);
+	USBD_AUDIO_RegisterInterface(&USBD_Device, &audio_class_interface);
+	BSP_LCD_DisplayStringAt(420, 50, (uint8_t *)"OK", LEFT_MODE);
 
-    // Start Device Process 
-    BSP_LCD_DisplayStringAt(0, 70, (uint8_t *)"USB Init ............... ", LEFT_MODE);
-    USBD_Start(&USBD_Device);
-    BSP_LCD_DisplayStringAt(420, 70, (uint8_t *)"OK", LEFT_MODE);
+	// Start Device Process
+	BSP_LCD_DisplayStringAt(0, 70, (uint8_t *)"USB Init ............... ", LEFT_MODE);
+	USBD_Start(&USBD_Device);
+	BSP_LCD_DisplayStringAt(420, 70, (uint8_t *)"OK", LEFT_MODE);
 
-}
-
-/**
- * @brief  Initialize the LTDC
- * @param  None
- * @retval None
- */
-void LTDC_Init(void)
-{
-    // DeInit 
-    HAL_LTDC_DeInit(&hltdc_discovery);
-
-    // LTDC Config 
-    // Timing and polarity 
-    hltdc_discovery.Init.HorizontalSync = HSYNC;
-    hltdc_discovery.Init.VerticalSync = VSYNC;
-    hltdc_discovery.Init.AccumulatedHBP = HSYNC + HBP;
-    hltdc_discovery.Init.AccumulatedVBP = VSYNC + VBP;
-    hltdc_discovery.Init.AccumulatedActiveH = VSYNC + VBP + VACT;
-    hltdc_discovery.Init.AccumulatedActiveW = HSYNC + HBP + HACT;
-    hltdc_discovery.Init.TotalHeigh = VSYNC + VBP + VACT + VFP;
-    hltdc_discovery.Init.TotalWidth = HSYNC + HBP + HACT + HFP;
-
-    // background value 
-    hltdc_discovery.Init.Backcolor.Blue = 0;
-    hltdc_discovery.Init.Backcolor.Green = 0;
-    hltdc_discovery.Init.Backcolor.Red = 0;
-
-    // Polarity 
-    hltdc_discovery.Init.HSPolarity = LTDC_HSPOLARITY_AL;
-    hltdc_discovery.Init.VSPolarity = LTDC_VSPOLARITY_AL;
-    hltdc_discovery.Init.DEPolarity = LTDC_DEPOLARITY_AL;
-    hltdc_discovery.Init.PCPolarity = LTDC_PCPOLARITY_IPC;
-    hltdc_discovery.Instance = LTDC;
-
-    HAL_LTDC_Init(&hltdc_discovery);
-}
-
-///**
-// * @brief  Display Example description.
-// * @param  None
-// * @retval None
-// */
-//static void LCD_BriefDisplay(void)
-//{
-//	BSP_LCD_SetFont(&Font24);
-//	BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
-//	BSP_LCD_FillRect(0, 0, 800, 112);
-//	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-//	BSP_LCD_FillRect(0, 112, 800, 368);
-//	BSP_LCD_SetBackColor(LCD_COLOR_BLUE);
-//	BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"        LCD_DSI_CmdMode_PartialRefresh");
-//	BSP_LCD_SetFont(&Font16);
-//	BSP_LCD_DisplayStringAtLine(4, (uint8_t *)"This example shows how to display images on LCD DSI using the partial");
-//	BSP_LCD_DisplayStringAtLine(5, (uint8_t *)"Refresh method by splitting the display area.");
-//}
-
-/**
- * @brief  Initializes the LCD layers.
- * @param  LayerIndex: Layer foreground or background
- * @param  FB_Address: Layer frame buffer
- * @retval None
- */
-void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
-{
-    LCD_LayerCfgTypeDef Layercfg;
-
-    // Layer Init 
-    Layercfg.WindowX0 = 0;
-    Layercfg.WindowX1 = BSP_LCD_GetXSize() / 2;
-    Layercfg.WindowY0 = 0;
-    Layercfg.WindowY1 = BSP_LCD_GetYSize();
-    Layercfg.PixelFormat = LTDC_PIXEL_FORMAT_ARGB8888;
-    Layercfg.FBStartAdress = Address;
-    Layercfg.Alpha = 255;
-    Layercfg.Alpha0 = 0;
-    Layercfg.Backcolor.Blue = 0;
-    Layercfg.Backcolor.Green = 0;
-    Layercfg.Backcolor.Red = 0;
-    Layercfg.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-    Layercfg.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-    Layercfg.ImageWidth = BSP_LCD_GetXSize() / 2;
-    Layercfg.ImageHeight = BSP_LCD_GetYSize();
-
-    HAL_LTDC_ConfigLayer(&hltdc_discovery, &Layercfg, LayerIndex);
-}
-
-static void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
-{
-    CopyImageToLcdFrameBuffer((void*)image, (void*)(LCD_FRAME_BUFFER), width, height, xPosition, yPosition);
-}
-
-static void Display_DemoDescription(void)
-{
-
-    // sets lcd foreground layer
-    BSP_LCD_SelectLayer(0);
-
-    // clears the lcd
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-    // sets the lcd text color and font
-    BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
-    BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
-
-    // displays header messages
-    // BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-    // BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
-
-    // displays footer
-    BSP_LCD_SetFont(&Font12);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Apple Pie - commit b1bb6358", CENTER_MODE);
-
-    // draws logo picture
-    BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 80);
-
-    // displays content messages
-    BSP_LCD_SetFont(&Font24);
-    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-    BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
-
-    BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
-    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Funcionalidades ativas:", CENTER_MODE);
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Audio USB | LCD | Filtros | Touch Inicial", CENTER_MODE);
-
-}
-
-/**
- * @brief  Copy and convert image (LAYER_SIZE_X, LAYER_SIZE_Y) of format RGB565
- * to LCD frame buffer area centered in WVGA resolution.
- * The area of copy is of size (LAYER_SIZE_X, LAYER_SIZE_Y) in ARGB8888.
- * @param  pSrc: Pointer to source buffer : source image buffer start here
- * @param  pDst: Pointer to destination buffer LCD frame buffer center area start here
- * @param  xSize: Buffer width (LAYER_SIZE_X here)
- * @param  ySize: Buffer height (LAYER_SIZE_Y here)
- * @retval LCD Status : LCD_OK or LCD_ERROR
- */
-static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y)
-{
-
-    uint32_t destination = (uint32_t)pDst + (y * 800 + x) * 4;
-    DMA2D_HandleTypeDef hdma2d_discovery;
-    HAL_StatusTypeDef hal_status = HAL_OK;
-    uint8_t lcd_status = LCD_ERROR;
-
-    // Configure the DMA2D Mode, Color Mode and output offset 
-    hdma2d_discovery.Init.Mode         = DMA2D_M2M_PFC;
-    hdma2d_discovery.Init.ColorMode    = DMA2D_OUTPUT_ARGB8888;// Output color out of PFC 
-    hdma2d_discovery.Init.AlphaInverted = DMA2D_REGULAR_ALPHA; // No Output Alpha Inversion
-    hdma2d_discovery.Init.RedBlueSwap   = DMA2D_RB_REGULAR;// No Output Red & Blue swap 
-
-    // Output offset in pixels == nb of pixels to be added at end of line to come to the  
-    // first pixel of the next line : on the output side of the DMA2D computation         
-    // TODO: GENERALIZE
-    hdma2d_discovery.Init.OutputOffset = (WVGA_RES_X - UTFPR_LOGO_WIDTH);
-
-    // Foreground Configuration 
-    hdma2d_discovery.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-    hdma2d_discovery.LayerCfg[1].InputAlpha = 0xFF; // fully opaque 
-    hdma2d_discovery.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
-    hdma2d_discovery.LayerCfg[1].InputOffset = 0;
-    hdma2d_discovery.LayerCfg[1].RedBlueSwap = DMA2D_RB_REGULAR; // No ForeGround Red/Blue swap 
-    hdma2d_discovery.LayerCfg[1].AlphaInverted = DMA2D_REGULAR_ALPHA; // No ForeGround Alpha inversion 
-
-    hdma2d_discovery.Instance = DMA2D;
-
-    // DMA2D Initialization 
-    if(HAL_DMA2D_Init(&hdma2d_discovery) == HAL_OK)
-    {
-        if(HAL_DMA2D_ConfigLayer(&hdma2d_discovery, 1) == HAL_OK)
-        {
-            if (HAL_DMA2D_Start(&hdma2d_discovery, (uint32_t)pSrc, destination, xSize, ySize) == HAL_OK)
-            {
-                // Polling For DMA transfer 
-                hal_status = HAL_DMA2D_PollForTransfer(&hdma2d_discovery, 10);
-                if(hal_status == HAL_OK)
-                {
-                    // return good status on exit 
-                    lcd_status = LCD_OK;
-                }
-            }
-        }
-    }
-
-    return(lcd_status);
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -630,13 +336,13 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
  */
 void assert_failed(uint8_t* file, uint32_t line)
 {
-    /* User can add his own implementation to report the file name and line number,
-       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* User can add his own implementation to report the file name and line number,
+	   ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 
-    // Infinite loop 
-    while (1)
-    {
-    }
+	// Infinite loop
+	while (1)
+	{
+	}
 }
 #endif
 

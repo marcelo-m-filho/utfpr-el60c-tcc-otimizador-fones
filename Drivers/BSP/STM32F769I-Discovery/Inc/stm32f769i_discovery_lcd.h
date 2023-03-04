@@ -237,6 +237,11 @@
  */
 #define LCD_COLOR_TRANSPARENT   ((uint32_t) 0xFF000000)
 
+#define LCD_COLOR_MINT_GREEN    ((uint32_t) 0xFF98FB98)
+#define LCD_COLOR_OLIVE_GREEN   ((uint32_t) 0xFF6B8E23)
+#define LCD_COLOR_MAROON        ((uint32_t) 0xFF800000)
+#define LCD_COLOR_BURGUNDY      ((uint32_t) 0xFF800020)
+
 /**
   * @brief LCD default font
   */
