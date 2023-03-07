@@ -85,9 +85,9 @@ void AudioUserDsp_SamplesToFrame(uint8_t* framePointer, int16_t* leftSamplePoint
 	framePointer[3] = ((uint16_t)*rightSamplePointer) / 256;
 }
 
-int16_t AudioUserDsp_ChangeAmplitude(int16_t sample, uint16_t amplitude)
+int16_t AudioUserDsp_ChangeAmplitude(int16_t sample, uint32_t amplitude)
 {
-	return 0;//sample / divider;
+	return sample / 4;
 }
 
 int16_t AudioUserDsp_LowPassFilter(int16_t sample, uint32_t iteration)

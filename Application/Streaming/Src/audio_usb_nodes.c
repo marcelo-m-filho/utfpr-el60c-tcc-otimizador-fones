@@ -20,12 +20,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usb_audio.h"
 #include "audio_usb_nodes.h"
-
-extern uint32_t xDebug[100];
-bool shouldApplyFilter;
+#include "user_lcd.h"
 
 
 /* External variables --------------------------------------------------------*/
+extern uint32_t xDebug[100];
+extern CircleButtonTypeDef circleButtons[];
+
 /* Private macros ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private defines -----------------------------------------------------------*/
@@ -381,12 +382,15 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
 
       buf = input_node->buf;
 
-//      uint8_t* newDataPointer = buf->data + buf->wr_ptr;
+      uint8_t* newDataPointer = buf->data + buf->wr_ptr;
 
       buf->wr_ptr += data_len; // increments buffer
 
-//      if(shouldApplyFilter)
-//        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_ChangeAmplitude);
+      if(circleButtons[1].isPressed)
+        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, NULL, AudioUserDsp_ChangeAmplitude);
+
+      if(circleButtons[1].isPressed)
+        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, NULL, AudioUserDsp_LowPassFilter);
 
       if(data_len != 192)
         xDebug[0] = data_len;

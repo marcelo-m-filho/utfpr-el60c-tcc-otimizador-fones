@@ -34,12 +34,13 @@ static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize
 // variables ----------------------------------------------------------
 // !! THE NUMBER_OF_CIRCLE_BUTTONS DEFINE HAS TO BE UP TO DATE WITH THE NUMBER OF BUTTONS DEFINED HERE
 CircleButtonTypeDef circleButtons[] = {
-  { 100, 420, 50, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",   "", true, false, false},
-  { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Bass",  "", false, false, false},
-  { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Virt",  "", false, false, false},
-  { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Delay", "", false, false, false},
-  { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Reverb","", false, false, false},
-  { 650, 120, 50, LCD_COLOR_LIGHTBLUE, LCD_COLOR_BLACK, "Sending", "Debug", false, true, false}
+  //  x,   y,  r,               color,       text color,        on,     off,  pressed, independent, active
+  { 100, 420, 50, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",     "",       true,     false,      false},
+  { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Volume",  "",       false,    false,      false},
+  { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
+  { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
+  { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
+  { 650, 120, 50, LCD_COLOR_LIGHTBLUE,  LCD_COLOR_BLACK, "Sending", "Debug",  false,    true,       false}
 };
 
 // external variable declarations -------------------------------------
