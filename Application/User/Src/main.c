@@ -27,7 +27,6 @@ uint8_t pColRight[]       = {0x01, 0x90, 0x03, 0x1F}; // 400 -> 799
 uint8_t pPage[]           = {0x00, 0x00, 0x01, 0xDF}; // 0 -> 479
 uint8_t pSyncLeft[]       = {0x02, 0x15};             // Scan @ 533
 
-uint32_t xDebug[100];
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 TIM_HandleTypeDef TimHandle;
@@ -58,7 +57,6 @@ extern CircleButtonTypeDef circleButtons[];
  */
 int main(void)
 {
-	memset(xDebug, 0, sizeof xDebug);
 
 	CPU_CACHE_Enable();
 
@@ -91,8 +89,6 @@ int main(void)
 	Timer_Init();
   #endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
-	int32_t messageCounter = 0;
-	uint8_t messageCounterString[100];
 
 	// Infinite loop
 	while (1)
@@ -101,27 +97,6 @@ int main(void)
 		{
 			Touchscreen_ButtonHandler();
 			touchscreenTimer = 0;
-		}
-
-		if(shouldPrintSamples)
-		{
-			LCD_PrintDebugVariable(20, true);
-			shouldPrintSamples = false;
-		}
-
-    if(circleButtons[5].isPressed && ++serialSendTimer > 10000)
-    {
-      LCD_UpdateButton(5, false, false);
-      serialSendTimer = 0;
-    }
-    
-
-		if(++serialTimer > 1000)
-		{
-			uint8_t stringSize = sprintf((char*)messageCounterString, "Horoscope [architecture-fix] with BSP via Serial (%i)\r\n", (int)messageCounter);
-			HAL_UART_Transmit(&UART1_Handle, messageCounterString, stringSize, 10);
-			messageCounter++;
-			serialTimer = 0;
 		}
 
 		if(++watchdogTimer > 10)

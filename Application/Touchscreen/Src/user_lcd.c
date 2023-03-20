@@ -37,7 +37,7 @@ CircleButtonTypeDef circleButtons[] = {
   //  x,   y,  r,               color,       text color,        on,     off,  pressed, independent, active
   { 100, 420, 50, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",     "",       true,     false,      false},
   { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Volume",  "",       false,    false,      false},
-  { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
+  { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Low Pass",     "",       false,    false,      false},
   { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
   { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
   { 650, 120, 50, LCD_COLOR_LIGHTBLUE,  LCD_COLOR_BLACK, "Sending", "Debug",  false,    true,       false}
@@ -45,7 +45,6 @@ CircleButtonTypeDef circleButtons[] = {
 
 // external variable declarations -------------------------------------
 extern LTDC_HandleTypeDef hltdc_discovery;
-extern uint32_t xDebug[100];
 /**
  * @brief  Initializes the DSI LCD.
  * The ititialization is done as below:
@@ -137,7 +136,7 @@ static void Display_StartupScreen(void)
   BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Versao Horoscope", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Branch touch-screen-refactor", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Branch audio-filters", CENTER_MODE);
 
   for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
   {
@@ -261,40 +260,6 @@ void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
     *watchdogCounter = 0;
 }
 
-void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
-{
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-  for(uint8_t position = 0; position < columns; position++)
-  {
-    uint32_t yOffset = 100 + 18 * position;
-    char desc[200];
-
-    if(printAsShort)
-    {
-      sprintf(
-        desc,
-        "%06i|%06i",
-        ((int16_t)xDebug[2 * position + 0]),
-        ((int16_t)xDebug[2 * position + 1])
-        );
-    }
-    else
-    {
-      sprintf(
-        desc,
-        "%04i|%04i|%04i|%04i",
-        ((int8_t)xDebug[4 * position + 0]),
-        ((int8_t)xDebug[4 * position + 1]),
-        ((int8_t)xDebug[4 * position + 2]),
-        ((int8_t)xDebug[4 * position + 3])
-        );
-    }
-
-    BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
-  }
-}
 
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
 {

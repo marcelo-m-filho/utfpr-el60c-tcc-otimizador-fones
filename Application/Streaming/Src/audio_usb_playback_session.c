@@ -96,8 +96,8 @@ static uint32_t PlaybackSynchroEstimatedCodecFrequency = 0;
 #endif /*USE_AUDIO_USB_INTERRUPT*/
    play_session->session.SessionCallback = USB_AudioPlaybackSessionCallback;
    play_session->buffer.size = USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE;
-   play_session->buffer.data = malloc( USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE); 
-   if(! play_session->buffer.data)
+   play_session->buffer.data = malloc(USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE); 
+   if(!play_session->buffer.data)
    {
     Error_Handler();
    }
@@ -129,22 +129,22 @@ static uint32_t PlaybackSynchroEstimatedCodecFrequency = 0;
 /* initializes synchronization setting */
   
 #if USE_AUDIO_PLAYBACK_USB_FEEDBACK
-     as_desc->synch_enabled = 1;
-     as_desc->synch_ep.ep_num = USB_AUDIO_CONFIG_PLAY_EP_SYNC;
-     as_desc->synch_ep.GetFeedback = USB_AudioPlaybackGetFeedback;
+     as_desc->synch_enabled         = 1;
+     as_desc->synch_ep.ep_num       = USB_AUDIO_CONFIG_PLAY_EP_SYNC;
+     as_desc->synch_ep.GetFeedback  = USB_AudioPlaybackGetFeedback;
      as_desc->synch_ep.private_data = (uint32_t) play_session;
-     as_desc->SofReceived = AUDIO_USB_Session_Sof_Received;
+     as_desc->SofReceived           = AUDIO_USB_Session_Sof_Received;
 #endif /* USE_AUDIO_PLAYBACK_USB_FEEDBACK */
   /* set USB AUDIO class callbacks */
-  as_desc->interface_num =  play_session->interface_num;
-  as_desc->alternate = 0;
-  as_desc->max_alternate = AUDIO_USB_PLAYBACK_ALTERNATE;
-  as_desc->private_data = session_handle;
-  as_desc->SetAS_Alternate = USB_AudioPlaybackSetAudioStreamingInterfaceAlternateSetting;
-  as_desc->GetState = USB_AudioPlaybackGetState;
+  as_desc->interface_num    = play_session->interface_num;
+  as_desc->alternate        = 0;
+  as_desc->max_alternate    = AUDIO_USB_PLAYBACK_ALTERNATE;
+  as_desc->private_data     = session_handle;
+  as_desc->SetAS_Alternate  = USB_AudioPlaybackSetAudioStreamingInterfaceAlternateSetting;
+  as_desc->GetState         = USB_AudioPlaybackGetState;
 
   /* initialize working buffer */
-  uint16_t buffer_margin = (PlaybackUSBInputNode.max_packet_length > PlaybackUSBInputNode.packet_length)?PlaybackUSBInputNode.max_packet_length:0;
+  uint16_t buffer_margin = (PlaybackUSBInputNode.max_packet_length > PlaybackUSBInputNode.packet_length) ? PlaybackUSBInputNode.max_packet_length : 0;
   USB_AudioStreamingInitializeDataBuffer(&play_session->buffer, USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE,
                                   AUDIO_MS_PACKET_SIZE_FROM_AUD_DESC(&PlaybackAudioDescription) , buffer_margin);
   play_session->session.state = AUDIO_SESSION_INITIALIZED;

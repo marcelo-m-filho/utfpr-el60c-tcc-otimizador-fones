@@ -67,7 +67,6 @@ static uint32_t Touchscreen_Handle_NewTouch(void);
 #endif // TS_MULTI_TOUCH_SUPPORTED == 1
 /* Private functions ---------------------------------------------------------*/
 
-extern uint32_t xDebug[100];
 extern CircleButtonTypeDef circleButtons[];
 extern uint32_t divider;
 extern bool shouldPrintSamples;

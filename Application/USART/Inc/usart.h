@@ -12,9 +12,11 @@
 
 // includes --------------------------------------------------------------------
 #include "stm32f7xx.h"
+#include "audio_node.h"
 
 extern UART_HandleTypeDef UART1_Handle;
 
 void USART1_UART_Init(void);
+void USART1_UART_SendMany(AUDIO_CircularBuffer_t* buffer);
 
 #endif // __USART_H__

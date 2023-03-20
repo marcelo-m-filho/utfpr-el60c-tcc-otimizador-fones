@@ -21,10 +21,10 @@
 #include "usb_audio.h"
 #include "audio_usb_nodes.h"
 #include "user_lcd.h"
+#include "usart.h"
 
 
 /* External variables --------------------------------------------------------*/
-extern uint32_t xDebug[100];
 extern CircleButtonTypeDef circleButtons[];
 
 /* Private macros ------------------------------------------------------------*/
@@ -87,6 +87,11 @@ static int8_t  USB_AudioStreamingInputOutputSetCurFrequency(uint32_t freq,uint8_
 static uint32_t  USB_AudioStreamingGetNearestFrequency(uint32_t freq,  uint32_t* freq_table, int freq_count);
 #endif /*USE_AUDIO_USB_MULTI_FREQUENCIES*/
 /* Private variables --------------------------------------------------------*/
+
+uint32_t sentSamplesCount = 0;
+uint32_t debounceTimer = 0;
+bool isDebouncing = false;
+
 #ifdef USE_AUDIO_USB_PLAY_MULTI_FREQUENCIES
 /* declare table of all supported frequencies, to select frequency when set frequency control is received */
  uint32_t USB_AUDIO_CONFIG_PLAY_FREQENCIES[USB_AUDIO_CONFIG_PLAY_FREQ_COUNT]=
@@ -298,22 +303,22 @@ static int8_t  USB_AudioStreamingInputOutputStart( AUDIO_CircularBuffer_t* buffe
   io_node = (AUDIO_USBInputOutputNode_t *)node_handle;
   if((io_node->node.state == AUDIO_NODE_INITIALIZED ) ||(io_node->node.state == AUDIO_NODE_STOPPED))
   {
-     io_node->node.state = AUDIO_NODE_STARTED;
-     io_node->buf = buffer;
-     io_node->buf->rd_ptr = io_node->buf->wr_ptr=0;
-     io_node->flags = 0;
+     io_node->node.state  = AUDIO_NODE_STARTED;
+     io_node->buf         = buffer;
+     io_node->buf->rd_ptr = io_node->buf->wr_ptr = 0;
+     io_node->flags       = 0;
      if(io_node->node.type == AUDIO_INPUT)
      {
        io_node->specific.input.threshold = threshold;
      }
      else
      {
-#if USB_AUDIO_CONFIG_RECORD_USE_FREQ_44_1_K
-       if(io_node->node.audio_description->frequency == USB_AUDIO_CONFIG_FREQ_44_1_K)
-       {
-         io_node->specific.output.packet_44_counter = 0;
-       }
-#endif /* USB_AUDIO_CONFIG_RECORD_USE_FREQ_44_1_K */
+      #if USB_AUDIO_CONFIG_RECORD_USE_FREQ_44_1_K
+        if(io_node->node.audio_description->frequency == USB_AUDIO_CONFIG_FREQ_44_1_K)
+        {
+          io_node->specific.output.packet_44_counter = 0;
+        }
+      #endif // USB_AUDIO_CONFIG_RECORD_USE_FREQ_44_1_K
      }
   }
   return 0;
@@ -362,91 +367,104 @@ uint8_t shouldMute = 0;
   */
 static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t node_handle)
  {
-   AUDIO_USBInputOutputNode_t *input_node;
-   AUDIO_CircularBuffer_t     *buf;
-   uint16_t                   buffer_data_count;
-   
+   AUDIO_USBInputOutputNode_t*  input_node;
+   AUDIO_CircularBuffer_t*      buffer;
+   uint16_t                     buffer_data_count;
+  
 
-   
-   input_node = (AUDIO_USBInputOutputNode_t *)node_handle;
-   if(input_node->node.state == AUDIO_NODE_STARTED)
-   {
-      /* @TODO add overrun detection */
-      if(input_node->flags & AUDIO_IO_RESTART_REQUIRED)
-      {
-        // when restart is required, ignore the packet and reset buffer
-        input_node->flags = 0;
-        input_node->buf->rd_ptr = input_node->buf->wr_ptr = 0;
-        return 0;
-      }
+  input_node = (AUDIO_USBInputOutputNode_t*)node_handle;
 
-      buf = input_node->buf;
+  if(input_node->node.state != AUDIO_NODE_STARTED)
+  {
+    Error_Handler();
+  }
 
-      uint8_t* newDataPointer = buf->data + buf->wr_ptr;
+  /* @TODO add overrun detection */
+  if(input_node->flags & AUDIO_IO_RESTART_REQUIRED)
+  {
+    // when restart is required, ignore the packet and reset buffer
+    input_node->flags = 0;
+    input_node->buf->rd_ptr = input_node->buf->wr_ptr = 0;
+    return 0;
+  }
 
-      buf->wr_ptr += data_len; // increments buffer
+  buffer = input_node->buf;
 
-      if(circleButtons[1].isPressed)
-        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, NULL, AudioUserDsp_ChangeAmplitude);
+  uint8_t* newDataPointer = buffer->data + buffer->wr_ptr;
 
-      if(circleButtons[1].isPressed)
-        AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, NULL, AudioUserDsp_LowPassFilter);
+  // if(!isDebouncing) 
+  // {
+    if(circleButtons[1].isPressed)
+    {
+      // isDebouncing = true;    
+      // circleButtons[1].isPressed = false;
+      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude);
+    }
 
-      if(data_len != 192)
-        xDebug[0] = data_len;
+    if(circleButtons[2].isPressed)
+    {
+      // isDebouncing = true;    
+      // circleButtons[2].isPressed = false;
+      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter);
+    }
 
-      // for(uint32_t i = 0; i < data_len; i++)
-      // {
+    if(circleButtons[5].isPressed)
+    {
+      // isDebouncing = true;    
+      circleButtons[5].isPressed = false;
+      USART1_UART_SendMany(buffer);
+    }
+  // }
+  // else
+  // {
+  //   if(++debounceTimer > 100)
+  //   {
+  //     debounceTimer = 0;
+  //     isDebouncing = false;
+  //   }
+  // }
 
-      //   int16_t leftSample = newDataPointer[4 * i + 1] * 256 + newDataPointer[4 * i];
-      //   int16_t rightSample = newDataPointer[4 * i + 3] * 256 + newDataPointer[4 * i + 2];
-
-      //   rightSample /= 16;
 
 
-      //   newDataPointer[4 * i] = ((uint16_t)leftSample) % 256;
-      //   newDataPointer[4 * i + 1] = ((uint16_t)leftSample) / 256;
-      //   newDataPointer[4 * i + 2] = 0;//rightSample % 256;
-      //   newDataPointer[4 * i + 3] = 0;//rightSample / 256;
-      // }
+  buffer->wr_ptr += data_len; // increments buffer
 
-     if((input_node->flags & AUDIO_IO_BEGIN_OF_STREAM) == 0)
-     { /* this is the first packet */
-       input_node->node.session_handle->SessionCallback(AUDIO_BEGIN_OF_STREAM,(AUDIO_Node_t*)input_node, input_node->node.session_handle);   /* send event to mother session */
-       input_node->flags |= AUDIO_IO_BEGIN_OF_STREAM;
-     }
-     else
-     {   /* if some sample are in the margin area , then copy them to regular area */
-        if(buf->wr_ptr > buf->size)
-        {
-          buf->wr_ptr -= buf->size;
-          memcpy(buf->data, buf->data+buf->size, buf->wr_ptr);
-        }
-      /* count pending audio samples in the buffer */
-      buffer_data_count = AUDIO_BUFFER_FILLED_SIZE(buf); 
-      if(buf->wr_ptr == buf->size)
-      {
-        buf->wr_ptr = 0;
-      }
 
-      if(((input_node->flags&AUDIO_IO_THRESHOLD_REACHED) == 0) && (buffer_data_count >= input_node->specific.input.threshold))
-      {  
 
-          // informs session that the buffer threshold is reached 
-          input_node->node.session_handle->SessionCallback(AUDIO_THRESHOLD_REACHED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);   
-          input_node->flags |= AUDIO_IO_THRESHOLD_REACHED ;
-       }
-       else
-       {
-        // informs session that a packet is received
-        input_node->node.session_handle->SessionCallback(AUDIO_PACKET_RECEIVED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);
-       }
-     }
+  // if it's the first packet, send the begin of stream event
+  if((input_node->flags & AUDIO_IO_BEGIN_OF_STREAM) == 0)
+  { 
+    input_node->node.session_handle->SessionCallback(AUDIO_BEGIN_OF_STREAM,(AUDIO_Node_t*)input_node, input_node->node.session_handle);   /* send event to mother session */
+    input_node->flags |= AUDIO_IO_BEGIN_OF_STREAM;
+  }
+  else
+  {
+    // if some of the samples are in the margin area, then copy them to the regular area
+    if(buffer->wr_ptr > buffer->size)
+    {
+      buffer->wr_ptr -= buffer->size;
+      memcpy(buffer->data, buffer->data + buffer->size, buffer->wr_ptr);
+    }
+
+    // counts pending audio samples in the buffer
+    buffer_data_count = AUDIO_BUFFER_FILLED_SIZE(buffer); 
+    if(buffer->wr_ptr == buffer->size)
+    {
+      buffer->wr_ptr = 0;
+    }
+
+    if(((input_node->flags & AUDIO_IO_THRESHOLD_REACHED) == 0) && (buffer_data_count >= input_node->specific.input.threshold))
+    {  
+      // informs session that the buffer threshold is reached 
+      input_node->node.session_handle->SessionCallback(AUDIO_THRESHOLD_REACHED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);   
+      input_node->flags |= AUDIO_IO_THRESHOLD_REACHED;
     }
     else
     {
-      Error_Handler();
+      // informs session that a packet is received
+      input_node->node.session_handle->SessionCallback(AUDIO_PACKET_RECEIVED, (AUDIO_Node_t*)input_node, input_node->node.session_handle);
     }
+  }
+    
 
     return 0;
  }
@@ -1033,12 +1051,9 @@ static int8_t  USB_AudioStreamingFeatureUnitGetStatus( uint32_t node_handle )
   * @param  margin: protection area size
   * @retval 0 if no error
   */
-  void USB_AudioStreamingInitializeDataBuffer(AUDIO_CircularBuffer_t* buf, 
-                                       uint32_t buffer_size, 
-                                       uint16_t packet_size, uint16_t margin)
+  void USB_AudioStreamingInitializeDataBuffer(AUDIO_CircularBuffer_t* buf, uint32_t buffer_size, uint16_t packet_size, uint16_t margin)
  {
-    buf->size = ((int)((buffer_size - margin )
-                       / packet_size)) * packet_size; 
+    buf->size = ((int)((buffer_size - margin) / packet_size)) * packet_size; 
     buf->rd_ptr = buf->wr_ptr = 0;
  }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -28,7 +28,6 @@ typedef struct CircleButton
 // function prototypes -----------------------------------------------
 void LCD_Init(void);
 void LCD_UpdateWatchdog(uint32_t* watchdogCounter);
-void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort);
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons);
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition);
 

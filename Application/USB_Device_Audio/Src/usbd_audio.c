@@ -869,8 +869,7 @@ static uint8_t  USBD_AUDIO_IsoOutIncomplete (USBD_HandleTypeDef *pdev, uint8_t e
   * @retval status
   */
 
-static uint8_t  USBD_AUDIO_DataOut (USBD_HandleTypeDef *pdev, 
-                              uint8_t epnum)
+static uint8_t  USBD_AUDIO_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
   
   USBD_AUDIO_EPTypeDef * ep;
