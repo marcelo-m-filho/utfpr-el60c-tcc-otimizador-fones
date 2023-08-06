@@ -365,7 +365,7 @@ uint8_t shouldMute = 0;
   * @param  node_handle(IN):        the input node handle, node must be initialized  and started
   * @retval  0 if no error
   */
-static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t node_handle)
+static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t node_handle)
  {
    AUDIO_USBInputOutputNode_t*  input_node;
    AUDIO_CircularBuffer_t*      buffer;
@@ -392,37 +392,21 @@ static int8_t  USB_AudioStreamingInputDataReceived( uint16_t data_len, uint32_t 
 
   uint8_t* newDataPointer = buffer->data + buffer->wr_ptr;
 
-  // if(!isDebouncing) 
-  // {
-    if(circleButtons[1].isPressed)
-    {
-      // isDebouncing = true;    
-      // circleButtons[1].isPressed = false;
-      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude);
-    }
+  if(circleButtons[1].isPressed)
+  {
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude);
+  }
 
-    if(circleButtons[2].isPressed)
-    {
-      // isDebouncing = true;    
-      // circleButtons[2].isPressed = false;
-      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter);
-    }
+  if(circleButtons[2].isPressed)
+  {
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter);
+  }
 
-    if(circleButtons[5].isPressed)
-    {
-      // isDebouncing = true;    
-      circleButtons[5].isPressed = false;
-      USART1_UART_SendMany(buffer);
-    }
-  // }
-  // else
-  // {
-  //   if(++debounceTimer > 100)
-  //   {
-  //     debounceTimer = 0;
-  //     isDebouncing = false;
-  //   }
-  // }
+  if(circleButtons[5].isPressed)
+  {
+    circleButtons[5].isPressed = false;
+    USART1_UART_SendMany(buffer);
+  }
 
 
 

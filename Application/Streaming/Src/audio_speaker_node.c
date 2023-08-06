@@ -113,11 +113,11 @@ static  int AUDIO_SpeakerDebugStats_count =0;
   
   speaker = (AUDIO_SpeakerNode_t*)node_handle;
   memset(speaker, 0, sizeof(AUDIO_SpeakerNode_t));
-  speaker->node.type = AUDIO_OUTPUT;
-  speaker->node.state = AUDIO_NODE_INITIALIZED;
-  speaker->node.session_handle = session_handle;
+  speaker->node.type              = AUDIO_OUTPUT;
+  speaker->node.state             = AUDIO_NODE_INITIALIZED;
+  speaker->node.session_handle    = session_handle;
   speaker->node.audio_description = audio_description;
-  speaker->specific.alt_buffer = malloc(SPEAKER_ALT_BUFFER_SIZE);
+  speaker->specific.alt_buffer    = malloc(SPEAKER_ALT_BUFFER_SIZE);
   if(speaker->specific.alt_buffer == 0)
   {
     Error_Handler();
@@ -125,19 +125,17 @@ static  int AUDIO_SpeakerDebugStats_count =0;
   AUDIO_SpeakerInitInjectionsParams( speaker);
 
   /* set callbacks */
-  speaker->SpeakerDeInit = AUDIO_SpeakerDeInit;
-  speaker->SpeakerStart = AUDIO_SpeakerStart;
-  speaker->SpeakerStop = AUDIO_SpeakerStop;
+  speaker->SpeakerDeInit          = AUDIO_SpeakerDeInit;
+  speaker->SpeakerStart           = AUDIO_SpeakerStart;
+  speaker->SpeakerStop            = AUDIO_SpeakerStop;
   speaker->SpeakerChangeFrequency = AUDIO_SpeakerChangeFrequency;
-  speaker->SpeakerMute = AUDIO_SpeakerMute;
-  speaker->SpeakerSetVolume = AUDIO_SpeakerSetVolume;
-  speaker->SpeakerStartReadCount = AUDIO_SpeakerStartReadCount;
-  speaker->SpeakerGetReadCount = AUDIO_SpeakerGetLastReadCount;
+  speaker->SpeakerMute            = AUDIO_SpeakerMute;
+  speaker->SpeakerSetVolume       = AUDIO_SpeakerSetVolume;
+  speaker->SpeakerStartReadCount  = AUDIO_SpeakerStartReadCount;
+  speaker->SpeakerGetReadCount    = AUDIO_SpeakerGetLastReadCount;
 
-  BSP_AUDIO_OUT_Init_Ext(OUTPUT_DEVICE_AUTO,
-                     VOLUME_DB_256_TO_PERCENT(VOLUME_SPEAKER_DEFAULT_DB_256),
-                     speaker->node.audio_description->frequency, audio_description->resolution<<3 );
-  BSP_AUDIO_OUT_Play((uint16_t *)speaker->specific.data ,speaker->specific.data_size );
+  BSP_AUDIO_OUT_Init_Ext(OUTPUT_DEVICE_AUTO, VOLUME_DB_256_TO_PERCENT(VOLUME_SPEAKER_DEFAULT_DB_256), speaker->node.audio_description->frequency, audio_description->resolution << 3);
+  BSP_AUDIO_OUT_Play((uint16_t *)speaker->specific.data, speaker->specific.data_size);
   AUDIO_SpeakerHandler = speaker;
   return 0;
 }

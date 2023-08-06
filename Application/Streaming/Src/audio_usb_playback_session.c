@@ -145,8 +145,7 @@ static uint32_t PlaybackSynchroEstimatedCodecFrequency = 0;
 
   /* initialize working buffer */
   uint16_t buffer_margin = (PlaybackUSBInputNode.max_packet_length > PlaybackUSBInputNode.packet_length) ? PlaybackUSBInputNode.max_packet_length : 0;
-  USB_AudioStreamingInitializeDataBuffer(&play_session->buffer, USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE,
-                                  AUDIO_MS_PACKET_SIZE_FROM_AUD_DESC(&PlaybackAudioDescription) , buffer_margin);
+  USB_AudioStreamingInitializeDataBuffer(&play_session->buffer, USB_AUDIO_CONFIG_PLAY_BUFFER_SIZE, AUDIO_MS_PACKET_SIZE_FROM_AUD_DESC(&PlaybackAudioDescription) , buffer_margin);
   play_session->session.state = AUDIO_SESSION_INITIALIZED;
 
   return 0;
