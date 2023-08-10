@@ -394,12 +394,28 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
 
   if(circleButtons[1].isPressed)
   {
-    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude, 0);
   }
 
   if(circleButtons[2].isPressed)
   {
-    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter, 0);
+  }
+
+  if(circleButtons[3].isPressed)
+  {
+    if(!biquadFilters[0].isInitialized)
+    {
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[0], -20, 200, 5);
+    }
+
+    if(!biquadFilters[1].isInitialized)
+    {
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[1], 20, 5000, 5);
+    }
+      
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 0);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 1);
   }
 
   if(circleButtons[5].isPressed)
