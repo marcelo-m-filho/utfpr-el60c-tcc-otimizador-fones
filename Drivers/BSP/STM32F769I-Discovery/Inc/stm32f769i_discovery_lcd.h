@@ -157,6 +157,8 @@
  */
 #define LCD_COLOR_YELLOW        ((uint32_t) 0xFFFFFF00)
 
+#define LCD_COLOR_UTFPRYELLOW   ((uint32_t) 0xFFF6C500)
+
 /** @brief Light Blue value in ARGB8888 format
  */
 #define LCD_COLOR_LIGHTBLUE     ((uint32_t) 0xFF8080FF)

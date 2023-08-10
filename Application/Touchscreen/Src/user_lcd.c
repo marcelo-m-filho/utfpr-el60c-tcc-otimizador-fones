@@ -126,17 +126,19 @@ static void Display_StartupScreen(void)
   // BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Apple Pie - commit b1bb6358", CENTER_MODE);
 
   // draws logo picture
-  BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 80);
+  // BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 20);
+  BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, 20, 20);
 
   // displays content messages
+  #define Y_BAR_POSITION -60
   BSP_LCD_SetFont(&Font24);
-  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-  BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
+  BSP_LCD_SetTextColor(LCD_COLOR_UTFPRYELLOW);
+  BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION, BSP_LCD_GetXSize(), 90);
 
-  BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
+  BSP_LCD_SetBackColor(LCD_COLOR_UTFPRYELLOW);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Versao Horoscope", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Branch audio-filters", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 15, (uint8_t *)"Versao Horoscope", CENTER_MODE);
+  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 45, (uint8_t *)"Branch biquad", CENTER_MODE);
 
   for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
   {
