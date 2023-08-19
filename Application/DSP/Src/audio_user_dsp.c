@@ -126,13 +126,16 @@ int16_t AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int1
   double a1 = -2.0 * cos(omega);
   double a2 = 1.0 - alpha / A;
 
-
   filter->b0 = (float)(b0 / a0);
   filter->b1 = (float)(b1 / a0);
   filter->b2 = (float)(b2 / a0);
   filter->a1 = (float)(a1 / a0);
   filter->a2 = (float)(a2 / a0);
 
+  filter->gain = gain;
+  filter->frequency = frequency;
+  filter->bandwidth = bandwidth;
+  
   if(!filter->isInitialized)
   {
     filter->in_z1 = 0;

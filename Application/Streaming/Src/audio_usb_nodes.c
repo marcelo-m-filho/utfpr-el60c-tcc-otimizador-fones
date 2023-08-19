@@ -402,21 +402,67 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
     AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter, 0);
   }
 
-  if(circleButtons[3].isPressed)
+  if(circleButtons[3].isPressed || circleButtons[0].isPressed)
   {
     if(!biquadFilters[0].isInitialized)
     {
-      AudioUserDsp_BiquadFilterConfig(&biquadFilters[0], -20, 200, 5);
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[0], 0, 100, 1);
     }
 
     if(!biquadFilters[1].isInitialized)
     {
-      AudioUserDsp_BiquadFilterConfig(&biquadFilters[1], 20, 5000, 5);
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[1], 0, 500, 1);
+    }
+
+    if(!biquadFilters[2].isInitialized)
+    {
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[2], 0, 1000, 1);
+    }
+
+    if(!biquadFilters[3].isInitialized)
+    {
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[3], 0, 4000, 1);
+    }
+
+      if(!biquadFilters[4].isInitialized)
+    {
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[4], 0, 8000, 2);
     }
       
     AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 0);
     AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 1);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 2);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 3);
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, 4);
   }
+
+
+  for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+  {
+    if(sliderKnobs[i].isPressed)
+    {
+      // AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], biquadFilters[i].gain + 1, biquadFilters[i].frequency, biquadFilters[i].bandwidth);
+
+      // int32_t stringSize;
+      // char result[50];
+
+      double inputMin = sliderKnobs[i].sliderY;
+      double inputMax = sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight;
+      double outputMax = 15;
+      double outputMin = -15;
+      int32_t value = sliderKnobs[i].knobY;
+
+      int16_t newGain = outputMax + (value - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
+      // int32_t interpolatedGain = (int32_t)((sliderKnobs[i].knobY - minGain) * 100 / (maxGain - minGain));
+      // stringSize = sprintf(result, "Frequency: %i, newGain: %i, knobY: %i\r\n", biquadFilters[i].frequency, newGain, sliderKnobs[i].knobY);
+      // HAL_UART_Transmit(&UART1_Handle, (uint8_t*)result, stringSize, 1000);
+      sliderKnobs[i].isPressed = false;
+
+      AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, biquadFilters[i].frequency, biquadFilters[i].bandwidth);
+    }
+  }
+
+
 
   if(circleButtons[5].isPressed)
   {

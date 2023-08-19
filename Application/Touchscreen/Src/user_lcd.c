@@ -30,6 +30,8 @@
 static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 static void     Display_StartupScreen(void);
 static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
+void LCD_DisplayPlusButton(uint8_t buttonIndex);
+void LCD_DisplayKnob(uint8_t knobIndex);
 
 // variables ----------------------------------------------------------
 // !! THE NUMBER_OF_CIRCLE_BUTTONS DEFINE HAS TO BE UP TO DATE WITH THE NUMBER OF BUTTONS DEFINED HERE
@@ -41,6 +43,19 @@ CircleButtonTypeDef circleButtons[] = {
   { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Biquad",     "",       false,    false,      false},
   { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
   { 650, 120, 50, LCD_COLOR_LIGHTBLUE,  LCD_COLOR_BLACK, "Sending", "Debug",  false,    true,       false}
+};
+
+IncrementButton plusButtons[] = {
+  { 100, 150, 50, 50, LCD_COLOR_BLACK, LCD_COLOR_WHITE, "+", false, 1},
+  // { 150, 100, 30, 30, LCD_COLOR_BLACK, LCD_COLOR_WHITE, "+", false, 1}
+};
+
+SliderKnob sliderKnobs[] = {
+  { 50, 20, 100, 300, LCD_COLOR_BLUE, 160, 20, false, 5, 5},
+  { 150, 20, 100, 300, LCD_COLOR_BLUE, 160, 20, false, 5, 5},
+  { 250, 20, 100, 300, LCD_COLOR_BLUE, 160, 20, false, 5, 5},
+  { 350, 20, 100, 300, LCD_COLOR_BLUE, 160, 20, false, 5, 5},
+  { 450, 20, 100, 300, LCD_COLOR_BLUE, 160, 20, false, 5, 5},
 };
 
 // external variable declarations -------------------------------------
@@ -144,6 +159,13 @@ static void Display_StartupScreen(void)
   {
     LCD_UpdateButton(i, circleButtons[i].isPressed, false);
   }
+
+  // LCD_DisplayPlusButton(0);
+
+  for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+  {
+    LCD_DisplayKnob(i);
+  }
 }
 
 /**
@@ -206,6 +228,32 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
   return(lcd_status);
 }
 
+
+void LCD_DisplayPlusButton(uint8_t buttonIndex)
+{
+  IncrementButton* button = &plusButtons[buttonIndex];
+
+  BSP_LCD_SetTextColor(button->color);
+  BSP_LCD_FillRect(button->x, button->y, button->width, button->height);
+
+
+  BSP_LCD_SetBackColor(button->color);
+  BSP_LCD_SetTextColor(button->textColor);
+  BSP_LCD_DisplayStringAt(button->x + button->width + 5, button->y + button->height - 20, (uint8_t *)button->text, LEFT_MODE);
+}
+
+void LCD_DisplayKnob(uint8_t knobIndex)
+{
+  SliderKnob* knob = &sliderKnobs[knobIndex];
+
+  BSP_LCD_SetTextColor(knob->sliderColor);
+  BSP_LCD_FillRect(knob->sliderX, knob->sliderY, knob->sliderWidth, knob->sliderHeight);
+
+  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  BSP_LCD_FillCircle(knob->sliderX + knob->sliderWidth / 2, knob->knobY, knob->knobRadius);
+}
+
+
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons)
 {
   CircleButtonTypeDef* button = &circleButtons[buttonIndex];
@@ -247,7 +295,6 @@ void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOthe
         LCD_UpdateButton(i, false, false);
     }
   }
-
 }
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)

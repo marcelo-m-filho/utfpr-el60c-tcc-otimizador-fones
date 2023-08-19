@@ -67,7 +67,6 @@ static uint32_t Touchscreen_Handle_NewTouch(void);
 #endif // TS_MULTI_TOUCH_SUPPORTED == 1
 /* Private functions ---------------------------------------------------------*/
 
-extern CircleButtonTypeDef circleButtons[];
 extern uint32_t divider;
 extern bool shouldPrintSamples;
 extern bool shouldApplyFilter;
@@ -98,16 +97,45 @@ void Touchscreen_ButtonHandler(void)
   touchXPosition = TS_State.touchX[0];
   touchYPosition = TS_State.touchY[0];
 
-  for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
-
-  if((touchYPosition > circleButtons[i].y - circleButtons[i].radius) && (touchYPosition < circleButtons[i].y + circleButtons[i].radius))
+  for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++) 
   {
-    if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
+    if((touchYPosition > circleButtons[i].y - circleButtons[i].radius) && (touchYPosition < circleButtons[i].y + circleButtons[i].radius))
     {
-      LCD_UpdateButton(i, true, true);
+      if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
+      {
+        LCD_UpdateButton(i, true, true);
+      }
     }
   }
+  
 
+  // for(uint8_t i = 0; i < NUMBER_OF_INCREMENT_BUTTONS; i++)
+  // {
+  //   if((touchYPosition > plusButtons[i].y) && (touchYPosition < plusButtons[i].y + plusButtons[i].height))
+  //   {
+  //     if((touchXPosition > plusButtons[i].x) && (touchXPosition < plusButtons[i].x + plusButtons[i].width))
+  //     {
+  //       plusButtons[i].isPressed = true;
+  //     }
+  //   }
+  // }
+
+  for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+  {
+    if((touchYPosition > sliderKnobs[i].sliderY) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight))
+    {
+      if((touchXPosition > sliderKnobs[i].sliderX) && (touchXPosition < sliderKnobs[i].sliderX + sliderKnobs[i].sliderWidth))
+      {
+        if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
+        {
+          LCD_DisplayKnob(i);
+          sliderKnobs[i].knobY = touchYPosition;
+          sliderKnobs[i].isPressed = true;
+          sliderKnobs[i].debounceCount = 0;
+        }
+      }
+    }
+  }
   // one or two touches have been detected; position of first touch is retrieved
 }
 
