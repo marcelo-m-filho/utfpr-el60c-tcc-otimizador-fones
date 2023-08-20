@@ -60,6 +60,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/horoscope/Drivers/CMSIS/Device/ST/STM32F7xx/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/horoscope/Drivers/BSP/STM32F769I-Discovery/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/horoscope/Application/USART/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/horoscope/Application/Persistence/Inc}&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols.37761151" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>

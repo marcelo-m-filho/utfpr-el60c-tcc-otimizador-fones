@@ -3,7 +3,7 @@
 #include "stlogo.h"
 #include "usb_audio.h"
 #include "usart.h"
-
+#include "flash_persistence.h"
 #include "user_lcd.h"
 
 // private variables -----------------------------------------------------------
@@ -84,11 +84,30 @@ int main(void)
 	uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
 	HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
 
+	// uint8_t writingString[] = "\r\nWriting data to storage...\r\n";
+	// HAL_UART_Transmit(&UART1_Handle, writingString, sizeof(writingString), 10);
+
+	// FlashPersistence_Write();
+
+	// uint8_t writeFinishedString[] = "\r\nWrite finished!\r\n";
+	// HAL_UART_Transmit(&UART1_Handle, writeFinishedString, sizeof(writeFinishedString), 10);	
+
+	uint8_t readingString[] = "\r\nReading data from storage...\r\n";
+	HAL_UART_Transmit(&UART1_Handle, readingString, sizeof(readingString), 10);
+
+	SavedData retrievedData = FlashPersistence_Read();
+	uint8_t readFinishedString[100];
+	uint8_t stringSize = sprintf(readFinishedString, "Read finished: %i, %i\r\n", retrievedData.intData, (int32_t)retrievedData.doubleData);
+
+	HAL_UART_Transmit(&UART1_Handle, readFinishedString, stringSize, 10);
+
+	
+
+
   #if USE_AUDIO_TIMER_VOLUME_CTRL
 	// configures timer for volume control handling
 	Timer_Init();
   #endif // USE_AUDIO_TIMER_VOLUME_CTRL
-
 
 	// Infinite loop
 	while (1)
