@@ -21,9 +21,7 @@ extern float out_z2;
 #define DSP_SERIAL_BUFFER_SIZE 100
 #define PI 3.14159265358979323846f
 
-
-
-BiquadFilter biquadFilters[5];
+BiquadFilter biquadFilters[NUMBER_OF_BANDS];
 
 void AudioUserDsp_ApplyFilterToSamples(uint8_t* dataPointer, uint32_t dataLength, int16_t (*leftChannelFilter)(int16_t, uint8_t), int16_t (*rightChannelFilter)(int16_t, uint8_t), uint8_t filterIndex)
 {

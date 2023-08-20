@@ -98,7 +98,6 @@ int main(void)
 	SavedData retrievedData = FlashPersistence_Read();
 	uint8_t readFinishedString[100];
 	uint8_t stringSize = sprintf(readFinishedString, "Read finished: %i, %i\r\n", retrievedData.intData, (int32_t)retrievedData.doubleData);
-
 	HAL_UART_Transmit(&UART1_Handle, readFinishedString, stringSize, 10);
 
 	
@@ -112,13 +111,13 @@ int main(void)
 	// Infinite loop
 	while (1)
 	{
-		if(++touchscreenTimer > 10)
+		if(++touchscreenTimer > 40)
 		{
 			Touchscreen_ButtonHandler();
 			touchscreenTimer = 0;
 		}
 
-		if(++watchdogTimer > 10)
+		if(++watchdogTimer > 1000)
 		{
 			LCD_UpdateWatchdog(&watchdogCounter);
 			watchdogTimer = 0;

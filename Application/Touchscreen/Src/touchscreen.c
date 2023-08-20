@@ -122,14 +122,14 @@ void Touchscreen_ButtonHandler(void)
 
   for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
   {
-    if((touchYPosition > sliderKnobs[i].sliderY) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight))
+    if((touchYPosition > sliderKnobs[i].sliderY + 10) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight - 10))
     {
       if((touchXPosition > sliderKnobs[i].sliderX) && (touchXPosition < sliderKnobs[i].sliderX + sliderKnobs[i].sliderWidth))
       {
         if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
         {
-          LCD_DisplayKnob(i);
-          sliderKnobs[i].knobY = touchYPosition;
+          // sliderKnobs[i].knobY = touchYPosition;
+          LCD_DisplayKnob(i, touchYPosition);
           sliderKnobs[i].isPressed = true;
           sliderKnobs[i].debounceCount = 0;
         }

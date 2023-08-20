@@ -5,11 +5,25 @@
 #include "stm32f769i_discovery_lcd.h"
 #include <stdbool.h>
 
+
 // defines -----------------------------------------------------------
+#define LCD_SCREEN_WIDTH              800
+#define LCD_SCREEN_HEIGHT             480
+#define ARGB8888_BYTE_PER_PIXEL       4
 #define LAYER0_ADDRESS    (LCD_FB_START_ADDRESS)
-#define NUMBER_OF_CIRCLE_BUTTONS 6
+#define LAYER1_ADDRESS    (LCD_FB_START_ADDRESS + (800 * 480 * ARGB8888_BYTE_PER_PIXEL)) 
+
+/* LTDC foreground layer address 800x480 in ARGB8888 */
+#define LCD_FG_LAYER_ADDRESS          LCD_FB_START_ADDRESS
+
+/* LTDC background layer address 800x480 in ARGB8888 following the foreground layer */
+#define LCD_BG_LAYER_ADDRESS          LCD_FG_LAYER_ADDRESS + (LCD_SCREEN_WIDTH * LCD_SCREEN_HEIGHT * ARGB8888_BYTE_PER_PIXEL)
+
+#define INTERNAL_BUFFER_START_ADDRESS LCD_BG_LAYER_ADDRESS + (LCD_SCREEN_WIDTH * LCD_SCREEN_HEIGHT * ARGB8888_BYTE_PER_PIXEL)
+
+#define NUMBER_OF_CIRCLE_BUTTONS 1
 #define NUMBER_OF_INCREMENT_BUTTONS 1
-#define NUMBER_OF_SLIDER_BUTTONS 5
+#define NUMBER_OF_SLIDER_BUTTONS 8
 
 // typedefs ----------------------------------------------------------
 typedef struct CircleButton
@@ -57,8 +71,9 @@ typedef struct SliderKnob
 void LCD_Init(void);
 void LCD_UpdateWatchdog(uint32_t* watchdogCounter);
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons);
-void LCD_DisplayKnob(uint8_t knobIndex);
+void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY);
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition);
+void LCD_RelocateKnob(uint8_t knobIndex, uint16_t knobY);
 
 extern CircleButtonTypeDef circleButtons[];
 extern IncrementButton plusButtons[];

@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "stdbool.h"
 
+#define NUMBER_OF_BANDS 8
+
+
 typedef struct BiquadFilter {
   float b0, b1, b2, a1, a2;
   float in_z1, in_z2, out_z1, out_z2;
@@ -23,6 +26,6 @@ int16_t AudioUserDsp_LowPassFilter(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth);
 
-extern BiquadFilter biquadFilters[5];
+extern BiquadFilter biquadFilters[NUMBER_OF_BANDS];
 
 #endif // __AUDIO_USER_DSP_H__
