@@ -105,6 +105,11 @@ int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex)
   filter->out_z2  = filter->out_z1;
   filter->out_z1  = fOutSample;
 
+  if(fOutSample > 32767)
+    fOutSample = 32767;
+  else if(fOutSample < -32768)
+    fOutSample = -32768;
+
   return (int16_t)fOutSample;
 }
 
