@@ -103,11 +103,60 @@ void Touchscreen_ButtonHandler(void)
     {
       if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
       {
+        
         LCD_UpdateButton(i, true, true);
+        return;
       }
     }
   }
+
+  if(touchYPosition > saveButton.y && touchYPosition < saveButton.y + saveButton.height)
+  {
+    if(touchXPosition > saveButton.x && touchXPosition < saveButton.x + saveButton.width)
+    {
+      if(!saveButton.isPressed)
+      {
+        saveButton.isPressed = true;
+        resetButton.isPressed = false;
+        undoButton.isPressed = false;
+      }
+
+      return;
+    }
+  }
+
+  if(touchYPosition > resetButton.y && touchYPosition < resetButton.y + resetButton.height)
+  {
+    if(touchXPosition > resetButton.x && touchXPosition < resetButton.x + resetButton.width)
+    {
+      if(!resetButton.isPressed)
+      {
+        saveButton.isPressed = false;
+        resetButton.isPressed = true;
+        undoButton.isPressed = false;
+      }
+
+      return;
+    }
+  }
   
+
+  if(touchYPosition > undoButton.y && touchYPosition < undoButton.y + undoButton.height)
+  {
+    if(touchXPosition > undoButton.x && touchXPosition < saveButton.x + undoButton.width)
+    {
+      if(!undoButton.isPressed)
+      {
+        saveButton.isPressed = false;
+        resetButton.isPressed = false;
+        undoButton.isPressed = true;
+      }
+
+      return;
+    }
+  }
+
+
 
   // for(uint8_t i = 0; i < NUMBER_OF_INCREMENT_BUTTONS; i++)
   // {
@@ -128,14 +177,36 @@ void Touchscreen_ButtonHandler(void)
       {
         if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
         {
-          // sliderKnobs[i].knobY = touchYPosition;
           LCD_DisplayKnob(i, touchYPosition);
           sliderKnobs[i].isPressed = true;
           sliderKnobs[i].debounceCount = 0;
+
+          resetButton.isPressed = false;
+          saveButton.isPressed = false;
+          undoButton.isPressed = false;
+          
+          if(resetButton.isActive)
+          {
+            resetButton.isActive = false;
+            LCD_UpdateRectangleButton(&resetButton);
+          }
+          if(saveButton.isActive)
+          {
+            saveButton.isActive = false;
+            LCD_UpdateRectangleButton(&saveButton);
+          }
+          if(undoButton.isActive)
+          {
+            undoButton.isActive = false;
+            LCD_UpdateRectangleButton(&undoButton);
+          } 
+          return;
         }
       }
     }
   }
+
+
   // one or two touches have been detected; position of first touch is retrieved
 }
 

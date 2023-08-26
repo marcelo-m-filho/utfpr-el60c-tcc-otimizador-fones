@@ -40,6 +40,19 @@ typedef struct CircleButton
     bool isActive;
 } CircleButtonTypeDef;
 
+typedef struct RectangleButton
+{
+    uint16_t x;
+    uint16_t y;
+    uint16_t width;
+    uint16_t height;
+    uint32_t inactiveColor;
+    uint32_t activeColor;
+    char* text;
+    bool isPressed;
+    bool isActive;
+} RectangleButton;
+
 typedef struct IncrementButton
 {
     uint16_t x;
@@ -73,10 +86,14 @@ void LCD_UpdateWatchdog(uint32_t* watchdogCounter);
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons);
 void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY);
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition);
-void LCD_RelocateKnob(uint8_t knobIndex, uint16_t knobY);
+int16_t LCD_TranslateGainToKnobPosition(uint8_t knobIndex, uint16_t knobY);
+void LCD_UpdateRectangleButton(RectangleButton* button);
 
 extern CircleButtonTypeDef circleButtons[];
 extern IncrementButton plusButtons[];
 extern SliderKnob sliderKnobs[];
+extern RectangleButton saveButton;
+extern RectangleButton resetButton;
+extern RectangleButton undoButton;
 
 #endif // __LCD_H

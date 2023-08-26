@@ -27,6 +27,8 @@
 #define LAYER_SIZE_Y            130
 #define LAYER_BYTE_PER_PIXEL    RGB565_BYTE_PER_PIXEL
 
+#define BUTTON_BORDER_SIZE 2
+
 // private function declarations --------------------------------------
 static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 static void     Display_StartupScreen(void);
@@ -44,6 +46,44 @@ CircleButtonTypeDef circleButtons[] = {
   // { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
   // { 650, 120, 50, LCD_COLOR_LIGHTBLUE,  LCD_COLOR_BLACK, "Sending", "Debug",  false,    true,       false}
 };
+
+RectangleButton saveButton = {
+  .x = 20,
+  .y = 200,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Salvar",
+  .isPressed = false,
+  .isActive = false
+};
+
+RectangleButton undoButton = {
+  .x = 20,
+  .y = 200 + 60,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Desfazer",
+  .isPressed = false,
+  .isActive = false
+};
+
+
+RectangleButton resetButton = {
+  .x = 20,
+  .y = 200 + 60 + 60,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Redefinir",
+  .isPressed = false,
+  .isActive = false
+};
+
 
 IncrementButton plusButtons[] = {
   { 100, 150, 50, 50, LCD_COLOR_BLACK, LCD_COLOR_WHITE, "+", false, 1},
@@ -176,6 +216,10 @@ static void Display_StartupScreen(void)
     LCD_InitKnob(i);
     LCD_DisplayKnob(i, sliderKnobs[i].knobY);
   }
+
+  LCD_UpdateRectangleButton(&saveButton);
+  LCD_UpdateRectangleButton(&resetButton);
+  LCD_UpdateRectangleButton(&undoButton);
 }
 
 /**
@@ -252,6 +296,18 @@ void LCD_DisplayPlusButton(uint8_t buttonIndex)
   BSP_LCD_DisplayStringAt(button->x + button->width + 5, button->y + button->height - 20, (uint8_t *)button->text, LEFT_MODE);
 }
 
+void LCD_UpdateRectangleButton(RectangleButton* button)
+{
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_FillRect(button->x - BUTTON_BORDER_SIZE, button->y - BUTTON_BORDER_SIZE, button->width + (2*BUTTON_BORDER_SIZE), button->height + (2*BUTTON_BORDER_SIZE));
+  BSP_LCD_SetTextColor(button->isActive ? button->activeColor : button->inactiveColor);
+  BSP_LCD_FillRect(button->x, button->y, button->width, button->height);
+
+  BSP_LCD_SetBackColor(button->isActive ? button->activeColor : button->inactiveColor);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(button->x, button->y + button->height / 2 - 6, (uint8_t *)button->text, LEFT_MODE);
+}
+
 void LCD_InitKnob(uint8_t knobIndex)
 {
   SliderKnob* knob = &sliderKnobs[knobIndex];
@@ -291,8 +347,6 @@ void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY)
 
   knob->knobY = newKnobY;
 
-
-
   double inputMin = knob->sliderY;
   double inputMax = knob->sliderY + knob->sliderHeight;
   double outputMax = 15;
@@ -314,7 +368,7 @@ void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY)
   // BSP_LCD_FillCircle(knob->sliderX + knob->sliderWidth / 2, knob->knobY, knob->knobRadius);
 }
 
-void LCD_RelocateKnob(uint8_t knobIndex, uint16_t gain)
+int16_t LCD_TranslateGainToKnobPosition(uint8_t knobIndex, uint16_t gain)
 {
   SliderKnob* knob = &sliderKnobs[knobIndex];
   double outputMin = knob->sliderY;
@@ -322,7 +376,8 @@ void LCD_RelocateKnob(uint8_t knobIndex, uint16_t gain)
   double inputMin = -15;
   double inputMax = 15;
   int16_t knobPosition = outputMax + (gain - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
-  knob->knobY = knobPosition;
+  return knobPosition;
+  // knob->knobY = knobPosition;
 }
 
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons)
@@ -370,16 +425,14 @@ void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOthe
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
 {
-  if(*watchdogCounter > 9999)
-    *watchdogCounter = 9999;
   char text[5];
   sprintf(text, "%04u", ((unsigned int)*watchdogCounter));
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-  // *watchdogCounter = *watchdogCounter + 1;
-  // if(*watchdogCounter > 9999)
-  //   *watchdogCounter = 0;
+  *watchdogCounter = *watchdogCounter + 1;
+  if(*watchdogCounter > 9999)
+    *watchdogCounter = 0;
 }
 
 
