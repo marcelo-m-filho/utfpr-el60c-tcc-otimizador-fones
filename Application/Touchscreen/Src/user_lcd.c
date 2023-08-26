@@ -370,14 +370,16 @@ void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOthe
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
 {
+  if(*watchdogCounter > 9999)
+    *watchdogCounter = 9999;
   char text[5];
   sprintf(text, "%04u", ((unsigned int)*watchdogCounter));
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)text, RIGHT_MODE);
-  *watchdogCounter = *watchdogCounter + 1;
-  if(*watchdogCounter > 9999)
-    *watchdogCounter = 0;
+  // *watchdogCounter = *watchdogCounter + 1;
+  // if(*watchdogCounter > 9999)
+  //   *watchdogCounter = 0;
 }
 
 
