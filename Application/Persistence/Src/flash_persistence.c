@@ -1,5 +1,7 @@
 #include "flash_persistence.h"
-
+#include "user_lcd.h"
+#include "usbd_core.h"
+extern USBD_HandleTypeDef USBD_Device;
 void FlashPersistence_Write()
 {
   FLASH_EraseInitTypeDef eraseInitStruct;
@@ -20,15 +22,21 @@ void FlashPersistence_Write()
 
   // HAL_FLASH_Unlock();
   // HAL_FLASH_OB_Unlock();
-  // HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError);
   // HAL_FLASH_Lock();
 
 //   for (uint32_t i = 0; i < sizeof(SavedData); i += 4) {
     //   HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR + i, 32);
+  
+  USBD_LL_Suspend(&USBD_Device);
+  USBD_Stop(&USBD_Device);
   HAL_FLASH_Unlock();
-  HAL_FLASH_OB_Unlock();
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR, 32);
+  HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError);
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR, sliderKnobs[0].knobY);
   HAL_FLASH_Lock();
+  USBD_LL_Resume(&USBD_Device);
+  USBD_Start(&USBD_Device);
+    //   HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR + i, *((uint32_t*)((uint8_t*)&dataToSave + i)));
+
 //   }
 }
 
@@ -40,6 +48,7 @@ SavedData FlashPersistence_Read()
         // *((uint32_t*)((uint8_t*)&retrievedData + i)) = *(__IO uint32_t*)(FLASH_USER_START_ADDR + i);
     // }
     retrievedData.doubleData = 123.4;
-    retrievedData.intData = *(volatile uint32_t*)(FLASH_USER_START_ADDR);
+    retrievedData.intData = *(volatile int32_t*)(FLASH_USER_START_ADDR);
+    LCD_DisplayKnob(0, retrievedData.intData);
     return retrievedData;
 }

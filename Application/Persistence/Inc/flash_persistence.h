@@ -5,8 +5,7 @@
 #include <stdint.h>
 #include "stm32f7xx_hal.h"
 
-// !!! ISSO DEVERIA SER UM ADDRESS E NÃO UM SECTOR
-#define FLASH_USER_START_ADDR    0x08180000
+#define FLASH_USER_START_ADDR 0x08180000
 
 typedef struct {
     int32_t intData;

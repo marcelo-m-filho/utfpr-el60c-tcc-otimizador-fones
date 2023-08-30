@@ -94,14 +94,14 @@ int main(void)
 	HAL_UART_Transmit(&UART1_Handle, readFinishedString, stringSize, 10);
 
 
-	// uint8_t writingString[] = "\r\nWriting data to storage...\r\n";
-	// HAL_UART_Transmit(&UART1_Handle, writingString, sizeof(writingString), 10);
-
-	// FlashPersistence_Write();
-
-	// uint8_t writeFinishedString[] = "\r\nWrite finished!\r\n";
-	// HAL_UART_Transmit(&UART1_Handle, writeFinishedString, sizeof(writeFinishedString), 10);	
-	
+//	uint8_t writingString[] = "\r\nWriting data to storage...\r\n";
+//	HAL_UART_Transmit(&UART1_Handle, writingString, sizeof(writingString), 10);
+//
+//	FlashPersistence_Write();
+//
+//	uint8_t writeFinishedString[] = "\r\nWrite finished!\r\n";
+//	HAL_UART_Transmit(&UART1_Handle, writeFinishedString, sizeof(writeFinishedString), 10);
+//
 
 
   #if USE_AUDIO_TIMER_VOLUME_CTRL
@@ -118,7 +118,7 @@ int main(void)
 			touchscreenTimer = 0;
 		}
 
-		if(++watchdogTimer > 5000)
+		if(++watchdogTimer > 500)
 		{
 			LCD_UpdateWatchdog(&watchdogCounter);
 			watchdogTimer = 0;

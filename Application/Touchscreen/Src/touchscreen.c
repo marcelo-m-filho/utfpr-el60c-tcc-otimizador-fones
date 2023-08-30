@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "user_lcd.h"
-
+#include "flash_persistence.h"
 /** @addtogroup STM32F7xx_HAL_Examples
  * @{
  */
@@ -119,6 +119,7 @@ void Touchscreen_ButtonHandler(void)
         saveButton.isPressed = true;
         resetButton.isPressed = false;
         undoButton.isPressed = false;
+        FlashPersistence_Write();
       }
 
       return;
@@ -140,7 +141,6 @@ void Touchscreen_ButtonHandler(void)
     }
   }
   
-
   if(touchYPosition > undoButton.y && touchYPosition < undoButton.y + undoButton.height)
   {
     if(touchXPosition > undoButton.x && touchXPosition < saveButton.x + undoButton.width)
