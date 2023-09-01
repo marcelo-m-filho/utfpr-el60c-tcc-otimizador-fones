@@ -38,6 +38,7 @@ typedef struct CircleButton
     bool isPressed;
     bool isIndependent;
     bool isActive;
+    uint32_t debounceTimer;
 } CircleButtonTypeDef;
 
 typedef struct RectangleButton

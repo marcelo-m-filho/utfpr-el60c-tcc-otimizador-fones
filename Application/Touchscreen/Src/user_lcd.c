@@ -39,7 +39,7 @@ void LCD_DisplayPlusButton(uint8_t buttonIndex);
 // !! THE NUMBER_OF_CIRCLE_BUTTONS DEFINE HAS TO BE UP TO DATE WITH THE NUMBER OF BUTTONS DEFINED HERE
 CircleButtonTypeDef circleButtons[] = {
   //  x,   y,  r,               color,       text color,        on,     off,  pressed, independent, active
-  { 100, 420, 50, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",     "",       true,     false,      false},
+  { 100, 450, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",     "",       false,     false,      false, 0},
   // { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Volume",  "",       false,    false,      false},
   // { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Low Pass",     "",       false,    false,      false},
   // { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Biquad",     "",       false,    false,      false},
@@ -207,9 +207,9 @@ static void Display_StartupScreen(void)
   }
 
   // LCD_DisplayPlusButton(0);
-
-  BSP_LCD_DisplayStringAt(sliderKnobs[0].sliderX, 0, (uint8_t *)" 30  60 150 400 1k 3k 8k 16k", LEFT_MODE);
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(sliderKnobs[0].sliderX, 0, (uint8_t *)" 30  60 150 400 1k 3k 8k 16k", LEFT_MODE);
   BSP_LCD_FillRect(sliderKnobs[0].sliderX - 2, sliderKnobs[0].sliderY - 2, NUMBER_OF_SLIDER_BUTTONS * sliderKnobs[0].sliderWidth + 4, sliderKnobs[0].sliderHeight + 4);
   for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
   {
@@ -392,43 +392,46 @@ void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOthe
 {
   CircleButtonTypeDef* button = &circleButtons[buttonIndex];
 
-  if(button->isActive && button->isPressed == isPressed)
-  {
-    return;
-  }
+  
 
+  // if(button->isActive && button->isPressed == isPressed)
+  // {
+  //   return;
+  // }
+
+  // button->isPressed = isPressed;
+
+  // if(!button->isActive)
+  // {
+  //   BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  //   BSP_LCD_FillCircle(button->x, button->y, button->radius);
+  //   button->isActive = true;
+  // }
+
+  BSP_LCD_SetTextColor(isPressed ? LCD_COLOR_GREEN : LCD_COLOR_RED);
+  BSP_LCD_FillCircle(button->x, button->y, button->radius);
   button->isPressed = isPressed;
 
-  if(!button->isActive)
-  {
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    BSP_LCD_FillCircle(button->x, button->y, button->radius);
-    button->isActive = true;
-  }
+  // BSP_LCD_SetTextColor(button->isPressed ? button->color : LCD_COLOR_LIGHTGRAY);
+  // BSP_LCD_FillCircle(button->x, button->y, button->radius - 5);
 
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_FillCircle(button->x, button->y, button->radius);
+  // BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 
-  BSP_LCD_SetTextColor(button->isPressed ? button->color : LCD_COLOR_LIGHTGRAY);
-  BSP_LCD_FillCircle(button->x, button->y, button->radius - 5);
+  // BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  // BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->offText : button->onText), LEFT_MODE);
 
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+  // BSP_LCD_SetTextColor(button->textColor);
+  // BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->onText : button->offText), LEFT_MODE);
 
-  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->offText : button->onText), LEFT_MODE);
+  // if(!button->isIndependent && shouldToggleOtherButtons)
+  // {
 
-  BSP_LCD_SetTextColor(button->textColor);
-  BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->onText : button->offText), LEFT_MODE);
-
-  if(!button->isIndependent && shouldToggleOtherButtons)
-  {
-
-    for(int i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
-    {
-      if(i != buttonIndex && !circleButtons[i].isIndependent)
-        LCD_UpdateButton(i, false, false);
-    }
-  }
+  //   for(int i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
+  //   {
+  //     if(i != buttonIndex && !circleButtons[i].isIndependent)
+  //       LCD_UpdateButton(i, false, false);
+  //   }
+  // }
 }
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)

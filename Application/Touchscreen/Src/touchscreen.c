@@ -73,6 +73,7 @@ extern bool shouldPrintSamples;
 extern bool shouldApplyFilter;
 bool areInitialCirclesDrawn = false;
 
+#define CIRCLE_BUTTON_DEBOUNCE_TIMER 100
 uint32_t yOffset = 0;
 uint32_t xOffset = 150;
 
@@ -93,7 +94,14 @@ void Touchscreen_ButtonHandler(void)
   initStatus = BSP_TS_GetState(&TS_State);
 
   if(!TS_State.touchDetected)
+  {
+    for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++) 
+    {
+      if(++circleButtons[i].debounceTimer > CIRCLE_BUTTON_DEBOUNCE_TIMER)
+        circleButtons[i].debounceTimer = CIRCLE_BUTTON_DEBOUNCE_TIMER;
+    }
     return;
+  }
 
   touchXPosition = TS_State.touchX[0];
   touchYPosition = TS_State.touchY[0];
@@ -105,7 +113,11 @@ void Touchscreen_ButtonHandler(void)
       if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
       {
         
-        LCD_UpdateButton(i, true, true);
+        if(circleButtons[i].debounceTimer == CIRCLE_BUTTON_DEBOUNCE_TIMER)
+          LCD_UpdateButton(i, !circleButtons[i].isPressed, false);
+
+        circleButtons[i].debounceTimer = 0;
+
         return;
       }
     }
