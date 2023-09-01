@@ -214,7 +214,7 @@ static void Display_StartupScreen(void)
   for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
   {
     LCD_InitKnob(i);
-    LCD_DisplayKnob(i, sliderKnobs[i].knobY);
+    // LCD_DisplayKnob(i, sliderKnobs[i].knobY);
   }
 
   LCD_UpdateRectangleButton(&saveButton);
@@ -305,7 +305,7 @@ void LCD_UpdateRectangleButton(RectangleButton* button)
 
   BSP_LCD_SetBackColor(button->isActive ? button->activeColor : button->inactiveColor);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(button->x, button->y + button->height / 2 - 6, (uint8_t *)button->text, LEFT_MODE);
+  BSP_LCD_DisplayStringAt(button->x + 5, button->y + button->height / 2 - 6, (uint8_t *)button->text, LEFT_MODE);
 }
 
 void LCD_InitKnob(uint8_t knobIndex)

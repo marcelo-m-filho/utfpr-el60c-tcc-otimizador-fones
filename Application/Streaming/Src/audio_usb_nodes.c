@@ -431,43 +431,44 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
     //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[4], 0, 8000, 2);
     // }
 
-    if(saveButton.isPressed && !saveButton.isActive)
-    {
-      saveButton.isActive = true;
-      undoButton.isActive = false;
-      resetButton.isActive = false;
+    // if(saveButton.isPressed && !saveButton.isActive)
+    // {
+    //   saveButton.isActive = true;
+    //   undoButton.isActive = false;
+    //   resetButton.isActive = false;
 
-      LCD_UpdateRectangleButton(&saveButton);
-      LCD_UpdateRectangleButton(&undoButton);
-      LCD_UpdateRectangleButton(&resetButton);
-    }
-    else if(undoButton.isPressed && !undoButton.isActive)
-    {
-      undoButton.isActive = true;
-      saveButton.isActive = false;
-      resetButton.isActive = false;
+    //   LCD_UpdateRectangleButton(&saveButton);
+    //   LCD_UpdateRectangleButton(&undoButton);
+    //   LCD_UpdateRectangleButton(&resetButton);
+    // }
+    // else if(undoButton.isPressed && !undoButton.isActive)
+    // {
+    //   undoButton.isActive = true;
+    //   saveButton.isActive = false;
+    //   resetButton.isActive = false;
 
-      LCD_UpdateRectangleButton(&saveButton);
-      LCD_UpdateRectangleButton(&undoButton);
-      LCD_UpdateRectangleButton(&resetButton);
-    }
-    else if(resetButton.isPressed && !resetButton.isActive)
-    {
-      resetButton.isActive = true;
-      saveButton.isActive = false;
-      undoButton.isActive = false;
+    //   LCD_UpdateRectangleButton(&saveButton);
+    //   LCD_UpdateRectangleButton(&undoButton);
+    //   LCD_UpdateRectangleButton(&resetButton);
+    // }
 
-      for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
-      {
-        AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
-        LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
-      }
+    // else if(resetButton.isPressed && !resetButton.isActive)
+    // {
+    //   resetButton.isActive = true;
+    //   saveButton.isActive = false;
+    //   undoButton.isActive = false;
+
+    //   for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    //   {
+    //     AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
+    //     LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
+    //   }
 
 
-      LCD_UpdateRectangleButton(&saveButton);
-      LCD_UpdateRectangleButton(&undoButton);
-      LCD_UpdateRectangleButton(&resetButton);
-    }
+    //   LCD_UpdateRectangleButton(&saveButton);
+    //   LCD_UpdateRectangleButton(&undoButton);
+    //   LCD_UpdateRectangleButton(&resetButton);
+    // }
       
 
     for (int8_t i = 0; i < NUMBER_OF_BANDS; i++)

@@ -31,7 +31,10 @@ void FlashPersistence_Write()
   USBD_Stop(&USBD_Device);
   HAL_FLASH_Unlock();
   HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError);
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR, sliderKnobs[0].knobY);
+  for(uint32_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+  {
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR + i*4, sliderKnobs[i].knobY);
+  }
   HAL_FLASH_Lock();
   USBD_LL_Resume(&USBD_Device);
   USBD_Start(&USBD_Device);
@@ -47,8 +50,11 @@ SavedData FlashPersistence_Read()
         // *((uint32_t*)((uint8_t*)&retrievedData + i)) = *(__IO uint32_t*)(FLASH_USER_START_ADDR + i);
         // *((uint32_t*)((uint8_t*)&retrievedData + i)) = *(__IO uint32_t*)(FLASH_USER_START_ADDR + i);
     // }
-    retrievedData.doubleData = 123.4;
-    retrievedData.intData = *(volatile int32_t*)(FLASH_USER_START_ADDR);
-    LCD_DisplayKnob(0, retrievedData.intData);
+    // retrievedData.doubleData = 123.4;
+    // retrievedData.intData = *(volatile int32_t*)(FLASH_USER_START_ADDR);
+    for(uint32_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    {
+      LCD_DisplayKnob(i, *(volatile int32_t*)(FLASH_USER_START_ADDR + i*4));
+    }
     return retrievedData;
 }
