@@ -502,16 +502,6 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
     }
   }
 
-
-
-  // if(circleButtons[5].isPressed)
-  // {
-  //   circleButtons[5].isPressed = false;
-  //   USART1_UART_SendMany(buffer);
-  // }
-
-
-
   buffer->wr_ptr += data_len; // increments buffer
 
 

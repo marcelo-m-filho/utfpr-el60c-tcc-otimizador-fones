@@ -24,7 +24,7 @@ void AudioUserDsp_ApplyFilterToSamples(
 int16_t AudioUserDsp_ChangeAmplitude(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_LowPassFilter(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex);
-int16_t AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth);
+void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth);
 
 extern BiquadFilter biquadFilters[NUMBER_OF_BANDS];
 

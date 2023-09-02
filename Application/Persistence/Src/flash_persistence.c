@@ -11,22 +11,6 @@ void FlashPersistence_Write()
   eraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
   uint32_t sectorError = 0;
     
-  SavedData dataToSave;
-  dataToSave.intData = 42;
-  dataToSave.doubleData = 31.4159;
-
-
-// clear all flags before you write it to flash
-//   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
-//                          FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
-
-  // HAL_FLASH_Unlock();
-  // HAL_FLASH_OB_Unlock();
-  // HAL_FLASH_Lock();
-
-//   for (uint32_t i = 0; i < sizeof(SavedData); i += 4) {
-    //   HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR + i, 32);
-  
   USBD_LL_Suspend(&USBD_Device);
   USBD_Stop(&USBD_Device);
   HAL_FLASH_Unlock();
@@ -38,23 +22,15 @@ void FlashPersistence_Write()
   HAL_FLASH_Lock();
   USBD_LL_Resume(&USBD_Device);
   USBD_Start(&USBD_Device);
-    //   HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_USER_START_ADDR + i, *((uint32_t*)((uint8_t*)&dataToSave + i)));
-
-//   }
 }
 
-SavedData FlashPersistence_Read()
+void FlashPersistence_Restore()
 {
-    SavedData retrievedData;
-    // for (uint32_t i = 0; i < sizeof(SavedData); i += 4) {
-        // *((uint32_t*)((uint8_t*)&retrievedData + i)) = *(__IO uint32_t*)(FLASH_USER_START_ADDR + i);
-        // *((uint32_t*)((uint8_t*)&retrievedData + i)) = *(__IO uint32_t*)(FLASH_USER_START_ADDR + i);
-    // }
-    // retrievedData.doubleData = 123.4;
-    // retrievedData.intData = *(volatile int32_t*)(FLASH_USER_START_ADDR);
-    for(uint32_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
-    {
-      LCD_DisplayKnob(i, *(volatile int32_t*)(FLASH_USER_START_ADDR + i*4));
-    }
-    return retrievedData;
+  for(uint32_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    sliderKnobs[i].knobY = *(volatile int32_t*)(FLASH_USER_START_ADDR + i*4);
+}
+
+uint16_t FlashPersistence_Read(uint8_t position)
+{
+  return *(volatile int32_t*)(FLASH_USER_START_ADDR + position * 4);
 }

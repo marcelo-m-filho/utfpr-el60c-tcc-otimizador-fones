@@ -86,22 +86,10 @@ int main(void)
 	uint8_t readingString[] = "\r\nReading data from storage...\r\n";
 	HAL_UART_Transmit(&UART1_Handle, readingString, sizeof(readingString), 10);
 
-	SavedData retrievedData = FlashPersistence_Read();
-	watchdogCounter = retrievedData.intData;
+	FlashPersistence_Restore();
 
-	uint8_t readFinishedString[100];
-	uint8_t stringSize = sprintf(readFinishedString, "Read finished: %i\r\n", retrievedData.intData);
-	HAL_UART_Transmit(&UART1_Handle, readFinishedString, stringSize, 10);
-
-
-//	uint8_t writingString[] = "\r\nWriting data to storage...\r\n";
-//	HAL_UART_Transmit(&UART1_Handle, writingString, sizeof(writingString), 10);
-//
-//	FlashPersistence_Write();
-//
-//	uint8_t writeFinishedString[] = "\r\nWrite finished!\r\n";
-//	HAL_UART_Transmit(&UART1_Handle, writeFinishedString, sizeof(writeFinishedString), 10);
-//
+	uint8_t readFinishedString[] = "\r\nRead finished!\r\n";
+	HAL_UART_Transmit(&UART1_Handle, readFinishedString, sizeof(readFinishedString), 10);
 
 
   #if USE_AUDIO_TIMER_VOLUME_CTRL

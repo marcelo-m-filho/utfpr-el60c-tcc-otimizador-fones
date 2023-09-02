@@ -28,6 +28,7 @@
 #define LAYER_BYTE_PER_PIXEL    RGB565_BYTE_PER_PIXEL
 
 #define BUTTON_BORDER_SIZE 2
+#define Y_BAR_POSITION -60
 
 // private function declarations --------------------------------------
 static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
@@ -39,7 +40,8 @@ void LCD_DisplayPlusButton(uint8_t buttonIndex);
 // !! THE NUMBER_OF_CIRCLE_BUTTONS DEFINE HAS TO BE UP TO DATE WITH THE NUMBER OF BUTTONS DEFINED HERE
 CircleButtonTypeDef circleButtons[] = {
   //  x,   y,  r,               color,       text color,        on,     off,  pressed, independent, active
-  { 100, 450, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",     "",       false,     false,      false, 0},
+  { 100, 440, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "EQ",     "",       false,     false,      false, 0},
+  { 150, 440, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Vol",     "",       false,     false,      false, 0},
   // { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Volume",  "",       false,    false,      false},
   // { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Low Pass",     "",       false,    false,      false},
   // { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Biquad",     "",       false,    false,      false},
@@ -163,7 +165,6 @@ static void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
 
 static void Display_StartupScreen(void)
 {
-
   // sets lcd foreground layer
   BSP_LCD_SelectLayer(0);
 
@@ -171,55 +172,72 @@ static void Display_StartupScreen(void)
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-  // sets the lcd text color and font
-  BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
-  BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
+  LCD_UpdateState();
+}
 
-  // displays header messages
-  // BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-  // BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
+void LCD_UpdateState()
+{
 
-  // displays footer
-  // BSP_LCD_SetFont(&Font12);
-  // BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Apple Pie - commit b1bb6358", CENTER_MODE);
+  if(circleButtons[0].isActive)
+  {
+    // displays background
+    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DisplayStringAt(sliderKnobs[0].sliderX, 0, (uint8_t *)" 30  60 150 400 1k 3k 8k 16k", LEFT_MODE);
+    BSP_LCD_FillRect(sliderKnobs[0].sliderX - 2, sliderKnobs[0].sliderY - 2, NUMBER_OF_SLIDER_BUTTONS * sliderKnobs[0].sliderWidth + 4, sliderKnobs[0].sliderHeight + 4);
 
-  // draws logo picture
-  // BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 20);
-  BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, 20, 20);
+    // displays option buttons
+    LCD_UpdateRectangleButton(&saveButton);
+    LCD_UpdateRectangleButton(&resetButton);
+    LCD_UpdateRectangleButton(&undoButton);
 
-  // displays content messages
-  #define Y_BAR_POSITION -60
-  BSP_LCD_SetFont(&Font24);
-  BSP_LCD_SetTextColor(LCD_COLOR_UTFPRYELLOW);
-  BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION, BSP_LCD_GetXSize(), 90);
+    // displays sliders and their knobs
+    for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    {
+      LCD_InitSlider(i);
+      LCD_DisplayKnob(i, sliderKnobs[i].knobY);
+    }
+  }
+  else
+  {
+    // default state: displays background
 
-  BSP_LCD_SetBackColor(LCD_COLOR_UTFPRYELLOW);
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 15, (uint8_t *)"Versao Horoscope", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 45, (uint8_t *)"Branch biquad", CENTER_MODE);
+    // clears display
+    BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-  // BSP_LCD_SelectLayer(LTDC_ACTIVE_LAYER_FOREGROUND);
-  // BSP_LCD_SetLayerVisible(LTDC_ACTIVE_LAYER_FOREGROUND, true);
+    // displays logo
+    BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, 20, 20);
 
+    // displays background yellow line
+    BSP_LCD_SetFont(&Font24);
+    BSP_LCD_SetTextColor(LCD_COLOR_UTFPRYELLOW);
+    BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION, BSP_LCD_GetXSize(), 90);
+
+    // displays background text
+    BSP_LCD_SetBackColor(LCD_COLOR_UTFPRYELLOW);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 15, (uint8_t *)"Versao Horoscope", CENTER_MODE);
+    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 45, (uint8_t *)"Branch biquad", CENTER_MODE);
+  }
+
+  // circle buttons are always updated
   for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
   {
-    LCD_UpdateButton(i, circleButtons[i].isPressed, false);
+    // draws button border
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_FillCircle(circleButtons[i].x, circleButtons[i].y, circleButtons[i].radius);
+
+    // draws button inner circle
+    BSP_LCD_SetTextColor(circleButtons[i].isPressed ? LCD_COLOR_LIGHTGREEN : LCD_COLOR_LIGHTGRAY);
+    BSP_LCD_FillCircle(circleButtons[i].x, circleButtons[i].y, circleButtons[i].radius - 3);
+
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+    BSP_LCD_DisplayStringAt(circleButtons[i].x - circleButtons[i].radius - 12, circleButtons[i].y - circleButtons[i].radius - 24, (uint8_t *)circleButtons[i].onText, LEFT_MODE);
+
+
   }
 
-  // LCD_DisplayPlusButton(0);
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(sliderKnobs[0].sliderX, 0, (uint8_t *)" 30  60 150 400 1k 3k 8k 16k", LEFT_MODE);
-  BSP_LCD_FillRect(sliderKnobs[0].sliderX - 2, sliderKnobs[0].sliderY - 2, NUMBER_OF_SLIDER_BUTTONS * sliderKnobs[0].sliderWidth + 4, sliderKnobs[0].sliderHeight + 4);
-  for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
-  {
-    LCD_InitKnob(i);
-    // LCD_DisplayKnob(i, sliderKnobs[i].knobY);
-  }
-
-  LCD_UpdateRectangleButton(&saveButton);
-  LCD_UpdateRectangleButton(&resetButton);
-  LCD_UpdateRectangleButton(&undoButton);
 }
 
 /**
@@ -308,7 +326,7 @@ void LCD_UpdateRectangleButton(RectangleButton* button)
   BSP_LCD_DisplayStringAt(button->x + 5, button->y + button->height / 2 - 6, (uint8_t *)button->text, LEFT_MODE);
 }
 
-void LCD_InitKnob(uint8_t knobIndex)
+void LCD_InitSlider(uint8_t knobIndex)
 {
   SliderKnob* knob = &sliderKnobs[knobIndex];
 
@@ -317,27 +335,21 @@ void LCD_InitKnob(uint8_t knobIndex)
 
   BSP_LCD_SetTextColor(knob->sliderColor);
   BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->sliderY + 10, 10, knob->sliderHeight - 20);
-
-
-
-  // char text[5];
-  // sprintf(text, "%03i", 0);
-  // BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-  // BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  // BSP_LCD_DisplayStringAt(knob->sliderX, 450, (uint8_t *)text, LEFT_MODE);
 }
 
 void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY)
 {
   SliderKnob* knob = &sliderKnobs[knobIndex];
 
-  // clears the previous spot
-  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  BSP_LCD_FillRect(knob->sliderX + 3, knob->knobY - 5, knob->sliderWidth - 3, 12);
+  // clears the previous spot if it moved
+  if(newKnobY != knob->knobY)
+  {
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_FillRect(knob->sliderX + 3, knob->knobY - 5, knob->sliderWidth - 3, 12);
 
-  BSP_LCD_SetTextColor(knob->sliderColor);
-  BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->knobY - 5, 10, 12);
-
+    BSP_LCD_SetTextColor(knob->sliderColor);
+    BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->knobY - 5, 10, 12);
+  }
 
   BSP_LCD_SetTextColor(knob->sliderColor);
   BSP_LCD_FillRect(knob->sliderX + 3, newKnobY - 5, knob->sliderWidth - 3, 12);
@@ -392,46 +404,9 @@ void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOthe
 {
   CircleButtonTypeDef* button = &circleButtons[buttonIndex];
 
-  
-
-  // if(button->isActive && button->isPressed == isPressed)
-  // {
-  //   return;
-  // }
-
-  // button->isPressed = isPressed;
-
-  // if(!button->isActive)
-  // {
-  //   BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  //   BSP_LCD_FillCircle(button->x, button->y, button->radius);
-  //   button->isActive = true;
-  // }
-
-  BSP_LCD_SetTextColor(isPressed ? LCD_COLOR_GREEN : LCD_COLOR_RED);
-  BSP_LCD_FillCircle(button->x, button->y, button->radius);
   button->isPressed = isPressed;
-
-  // BSP_LCD_SetTextColor(button->isPressed ? button->color : LCD_COLOR_LIGHTGRAY);
-  // BSP_LCD_FillCircle(button->x, button->y, button->radius - 5);
-
-  // BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-  // BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  // BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->offText : button->onText), LEFT_MODE);
-
-  // BSP_LCD_SetTextColor(button->textColor);
-  // BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->onText : button->offText), LEFT_MODE);
-
-  // if(!button->isIndependent && shouldToggleOtherButtons)
-  // {
-
-  //   for(int i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
-  //   {
-  //     if(i != buttonIndex && !circleButtons[i].isIndependent)
-  //       LCD_UpdateButton(i, false, false);
-  //   }
-  // }
+  button->isActive = isPressed;
+  LCD_UpdateState();
 }
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)

@@ -123,126 +123,115 @@ void Touchscreen_ButtonHandler(void)
     }
   }
 
-  if(touchYPosition > saveButton.y && touchYPosition < saveButton.y + saveButton.height)
-  {
-    if(touchXPosition > saveButton.x && touchXPosition < saveButton.x + saveButton.width)
+  if(circleButtons[0].isActive)
+  {  
+    if(touchYPosition > saveButton.y && touchYPosition < saveButton.y + saveButton.height)
     {
-      if(!saveButton.isPressed)
+      if(touchXPosition > saveButton.x && touchXPosition < saveButton.x + saveButton.width)
       {
-        saveButton.isPressed = true;
-        saveButton.isActive = true;
-        resetButton.isPressed = false;
-        resetButton.isActive = false;
-        undoButton.isPressed = false;
-        undoButton.isActive = false;
-        LCD_UpdateRectangleButton(&saveButton);
-        LCD_UpdateRectangleButton(&undoButton);
-        LCD_UpdateRectangleButton(&resetButton);
-        FlashPersistence_Write();
-      }
-
-      return;
-    }
-  }  
-  else if(touchYPosition > undoButton.y && touchYPosition < undoButton.y + undoButton.height)
-  {
-    if(touchXPosition > undoButton.x && touchXPosition < saveButton.x + undoButton.width)
-    {
-      if(!undoButton.isPressed)
-      {
-        saveButton.isPressed = false;
-        saveButton.isActive = false;
-        undoButton.isPressed = true;
-        undoButton.isActive = true;
-        resetButton.isPressed = false;
-        resetButton.isActive = false;
-        LCD_UpdateRectangleButton(&saveButton);
-        LCD_UpdateRectangleButton(&undoButton);
-        LCD_UpdateRectangleButton(&resetButton);
-        FlashPersistence_Read();
-      }
-
-      return;
-    }
-  }
-  else if(touchYPosition > resetButton.y && touchYPosition < resetButton.y + resetButton.height)
-  {
-    if(touchXPosition > resetButton.x && touchXPosition < resetButton.x + resetButton.width)
-    {
-      if(!resetButton.isPressed)
-      {
-        saveButton.isPressed = false;
-        saveButton.isActive = false;
-        undoButton.isPressed = false;
-        undoButton.isActive = false;
-        resetButton.isPressed = true;
-        resetButton.isActive = true;
-        LCD_UpdateRectangleButton(&saveButton);
-        LCD_UpdateRectangleButton(&undoButton);
-        LCD_UpdateRectangleButton(&resetButton);
-        for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+        if(!saveButton.isPressed)
         {
-          AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
-          LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
-        }
-      }
-
-      return;
-    }
-  }
-
-
-
-  // for(uint8_t i = 0; i < NUMBER_OF_INCREMENT_BUTTONS; i++)
-  // {
-  //   if((touchYPosition > plusButtons[i].y) && (touchYPosition < plusButtons[i].y + plusButtons[i].height))
-  //   {
-  //     if((touchXPosition > plusButtons[i].x) && (touchXPosition < plusButtons[i].x + plusButtons[i].width))
-  //     {
-  //       plusButtons[i].isPressed = true;
-  //     }
-  //   }
-  // }
-
-  for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
-  {
-    if((touchYPosition > sliderKnobs[i].sliderY + 10) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight - 10))
-    {
-      if((touchXPosition > sliderKnobs[i].sliderX) && (touchXPosition < sliderKnobs[i].sliderX + sliderKnobs[i].sliderWidth))
-      {
-        if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
-        {
-          LCD_DisplayKnob(i, touchYPosition);
-          sliderKnobs[i].isPressed = true;
-          sliderKnobs[i].debounceCount = 0;
-
+          saveButton.isPressed = true;
+          saveButton.isActive = true;
           resetButton.isPressed = false;
-          saveButton.isPressed = false;
+          resetButton.isActive = false;
           undoButton.isPressed = false;
-          
-          if(resetButton.isActive)
+          undoButton.isActive = false;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          FlashPersistence_Write();
+        }
+
+        return;
+      }
+    }  
+    else if(touchYPosition > undoButton.y && touchYPosition < undoButton.y + undoButton.height)
+    {
+      if(touchXPosition > undoButton.x && touchXPosition < saveButton.x + undoButton.width)
+      {
+        if(!undoButton.isPressed)
+        {
+          saveButton.isPressed = false;
+          saveButton.isActive = false;
+          undoButton.isPressed = true;
+          undoButton.isActive = true;
+          resetButton.isPressed = false;
+          resetButton.isActive = false;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+            LCD_DisplayKnob(i, FlashPersistence_Read(i));
+        }
+
+        return;
+      }
+    }
+    else if(touchYPosition > resetButton.y && touchYPosition < resetButton.y + resetButton.height)
+    {
+      if(touchXPosition > resetButton.x && touchXPosition < resetButton.x + resetButton.width)
+      {
+        if(!resetButton.isPressed)
+        {
+          saveButton.isPressed = false;
+          saveButton.isActive = false;
+          undoButton.isPressed = false;
+          undoButton.isActive = false;
+          resetButton.isPressed = true;
+          resetButton.isActive = true;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
           {
-            resetButton.isActive = false;
-            LCD_UpdateRectangleButton(&resetButton);
+            AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
+            LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
           }
-          if(saveButton.isActive)
+        }
+
+        return;
+      }
+    }
+
+    for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    {
+      if((touchYPosition > sliderKnobs[i].sliderY + 10) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight - 10))
+      {
+        if((touchXPosition > sliderKnobs[i].sliderX) && (touchXPosition < sliderKnobs[i].sliderX + sliderKnobs[i].sliderWidth))
+        {
+          if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
           {
-            saveButton.isActive = false;
-            LCD_UpdateRectangleButton(&saveButton);
+            LCD_DisplayKnob(i, touchYPosition);
+            sliderKnobs[i].isPressed = true;
+            sliderKnobs[i].debounceCount = 0;
+
+            resetButton.isPressed = false;
+            saveButton.isPressed = false;
+            undoButton.isPressed = false;
+            
+            if(resetButton.isActive)
+            {
+              resetButton.isActive = false;
+              LCD_UpdateRectangleButton(&resetButton);
+            }
+            if(saveButton.isActive)
+            {
+              saveButton.isActive = false;
+              LCD_UpdateRectangleButton(&saveButton);
+            }
+            if(undoButton.isActive)
+            {
+              undoButton.isActive = false;
+              LCD_UpdateRectangleButton(&undoButton);
+            } 
+            return;
           }
-          if(undoButton.isActive)
-          {
-            undoButton.isActive = false;
-            LCD_UpdateRectangleButton(&undoButton);
-          } 
-          return;
         }
       }
     }
   }
 
-
-  // one or two touches have been detected; position of first touch is retrieved
 }
 
 

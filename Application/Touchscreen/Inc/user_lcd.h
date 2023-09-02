@@ -89,6 +89,9 @@ void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY);
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition);
 int16_t LCD_TranslateGainToKnobPosition(uint8_t knobIndex, uint16_t gain);
 void LCD_UpdateRectangleButton(RectangleButton* button);
+void LCD_UpdateState();
+void LCD_InitSlider(uint8_t knobIndex);
+
 
 extern CircleButtonTypeDef circleButtons[];
 extern IncrementButton plusButtons[];

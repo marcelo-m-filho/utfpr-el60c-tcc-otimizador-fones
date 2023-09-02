@@ -7,13 +7,9 @@
 
 #define FLASH_USER_START_ADDR 0x08180000
 
-typedef struct {
-    int32_t intData;
-    double doubleData;
-} SavedData;
-
 void FlashPersistence_Write();
-SavedData FlashPersistence_Read();
+void FlashPersistence_Restore();
+uint16_t FlashPersistence_Read(uint8_t position);
 
 
 #endif // __FLASH_PERSISTENCE_H

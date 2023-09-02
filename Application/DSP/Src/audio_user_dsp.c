@@ -113,11 +113,8 @@ int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex)
   return (int16_t)fOutSample;
 }
 
-int16_t AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth)
+void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth)
 {
-  int32_t stringSize;
-  char result[100];
-
   double A = pow(10.0, gain / 40.0);
   double omega = 2.0 * PI * frequency / USB_AUDIO_CONFIG_PLAY_DEF_FREQ;
   double alpha = sin(omega) * sinh(log(2) / 2.0 * bandwidth * omega / sin(omega));
