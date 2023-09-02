@@ -377,15 +377,6 @@ void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY)
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   BSP_LCD_DisplayStringAt(knob->sliderX, 450, (uint8_t *)text, LEFT_MODE);
-
-  // BSP_LCD_SetTextColor(knob->sliderColor);
-  // BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->sliderY, 10, knob->sliderHeight);
-
-  // BSP_LCD_SetTextColor(knob->sliderColor);
-  // BSP_LCD_FillCircle(knob->sliderX + knob->sliderWidth / 2, knob->knobY, knob->knobRadius + 2);
-
-  // BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  // BSP_LCD_FillCircle(knob->sliderX + knob->sliderWidth / 2, knob->knobY, knob->knobRadius);
 }
 
 int16_t LCD_TranslateGainToKnobPosition(uint8_t knobIndex, uint16_t gain)

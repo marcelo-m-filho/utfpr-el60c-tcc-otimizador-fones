@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "stdbool.h"
+#include "user_lcd.h"
 
 #define NUMBER_OF_BANDS 8
 
@@ -25,6 +26,7 @@ int16_t AudioUserDsp_ChangeAmplitude(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_LowPassFilter(int16_t sample, uint8_t filterIndex);
 int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex);
 void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth);
+int16_t AudioUserDsp_CalculateGain(uint16_t sliderY, SliderKnob* sliderKnob);
 
 extern BiquadFilter biquadFilters[NUMBER_OF_BANDS];
 

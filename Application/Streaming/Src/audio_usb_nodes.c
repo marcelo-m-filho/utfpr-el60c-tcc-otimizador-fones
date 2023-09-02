@@ -394,113 +394,19 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
 
   uint8_t* newDataPointer = buffer->data + buffer->wr_ptr;
 
-  // if(circleButtons[1].isPressed)
-  // {
-  //   AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_ChangeAmplitude, AudioUserDsp_ChangeAmplitude, 0);
-  // }
-
-  // if(circleButtons[2].isPressed)
-  // {
-  //   AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_LowPassFilter, AudioUserDsp_LowPassFilter, 0);
-  // }
-
-  // if(circleButtons[3].isPressed || circleButtons[0].isPressed)
-  // {
-    // if(!biquadFilters[0].isInitialized)
-    // {
-    //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[0], 0, 100, 1);
-    // }
-
-    // if(!biquadFilters[1].isInitialized)
-    // {
-    //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[1], 0, 500, 1);
-    // }
-
-    // if(!biquadFilters[2].isInitialized)
-    // {
-    //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[2], 0, 1000, 1);
-    // }
-
-    // if(!biquadFilters[3].isInitialized)
-    // {
-    //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[3], 0, 4000, 1);
-    // }
-
-    //   if(!biquadFilters[4].isInitialized)
-    // {
-    //   AudioUserDsp_BiquadFilterConfig(&biquadFilters[4], 0, 8000, 2);
-    // }
-
-    // if(saveButton.isPressed && !saveButton.isActive)
-    // {
-    //   saveButton.isActive = true;
-    //   undoButton.isActive = false;
-    //   resetButton.isActive = false;
-
-    //   LCD_UpdateRectangleButton(&saveButton);
-    //   LCD_UpdateRectangleButton(&undoButton);
-    //   LCD_UpdateRectangleButton(&resetButton);
-    // }
-    // else if(undoButton.isPressed && !undoButton.isActive)
-    // {
-    //   undoButton.isActive = true;
-    //   saveButton.isActive = false;
-    //   resetButton.isActive = false;
-
-    //   LCD_UpdateRectangleButton(&saveButton);
-    //   LCD_UpdateRectangleButton(&undoButton);
-    //   LCD_UpdateRectangleButton(&resetButton);
-    // }
-
-    // else if(resetButton.isPressed && !resetButton.isActive)
-    // {
-    //   resetButton.isActive = true;
-    //   saveButton.isActive = false;
-    //   undoButton.isActive = false;
-
-    //   for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
-    //   {
-    //     AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
-    //     LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
-    //   }
-
-
-    //   LCD_UpdateRectangleButton(&saveButton);
-    //   LCD_UpdateRectangleButton(&undoButton);
-    //   LCD_UpdateRectangleButton(&resetButton);
-    // }
-      
-
-    for (int8_t i = 0; i < NUMBER_OF_BANDS; i++)
-    {
-      AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, i);
-    }
-  // }
-
-
   for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
   {
-    if(!biquadFilters[i].isInitialized)
-    {
-      int16_t gain = 0;
-      AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], gain, frequencies[i], bandwidths[i]);
-      LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, gain));
-    }
-
     if(sliderKnobs[i].isPressed)
     {
-
-      double inputMin = sliderKnobs[i].sliderY;
-      double inputMax = sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight;
-      double outputMax = 15;
-      double outputMin = -15;
-      int16_t newGain = outputMax + (sliderKnobs[i].knobY - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
       sliderKnobs[i].isPressed = false;
-
+      int16_t newGain = AudioUserDsp_CalculateGain(i, &sliderKnobs[i]);
       if(newGain != biquadFilters[i].gain)
         AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, biquadFilters[i].frequency, biquadFilters[i].bandwidth);
     }
   }
+ 
+  for (int8_t i = 0; i < 8; i++)
+    AudioUserDsp_ApplyFilterToSamples(newDataPointer, data_len, AudioUserDsp_BiquadFilter, AudioUserDsp_BiquadFilter, i);
 
   buffer->wr_ptr += data_len; // increments buffer
 
@@ -1114,7 +1020,6 @@ static int8_t  USB_AudioStreamingFeatureUnitGetStatus( uint32_t node_handle )
   return 0;
 }
 #endif /* USE_USB_AUDIO_CLASS_10 */
-
 
 
 /**

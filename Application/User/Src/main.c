@@ -26,7 +26,8 @@ uint8_t pColLeft[]        = {0x00, 0x00, 0x01, 0x8F}; // 0 -> 399
 uint8_t pColRight[]       = {0x01, 0x90, 0x03, 0x1F}; // 400 -> 799
 uint8_t pPage[]           = {0x00, 0x00, 0x01, 0xDF}; // 0 -> 479
 uint8_t pSyncLeft[]       = {0x02, 0x15};             // Scan @ 533
-
+extern int16_t frequencies[];
+extern int16_t bandwidths[];
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 TIM_HandleTypeDef TimHandle;
@@ -87,6 +88,12 @@ int main(void)
 	HAL_UART_Transmit(&UART1_Handle, readingString, sizeof(readingString), 10);
 
 	FlashPersistence_Restore();
+	for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+	{
+		int16_t newGain = AudioUserDsp_CalculateGain(i, &sliderKnobs[i]);
+		AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, frequencies[i], bandwidths[i]);
+	}
+
 
 	uint8_t readFinishedString[] = "\r\nRead finished!\r\n";
 	HAL_UART_Transmit(&UART1_Handle, readFinishedString, sizeof(readFinishedString), 10);

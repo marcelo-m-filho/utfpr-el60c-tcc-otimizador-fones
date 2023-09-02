@@ -2,7 +2,6 @@
 #include "usart.h"
 #include "usb_audio.h"
 #include <math.h>
-
 extern UART_HandleTypeDef UART1_Handle;
 
 void AudioUserDsp_FrameToSamples(uint8_t*, int16_t* leftSamplePointer, int16_t* rightSamplePointer);
@@ -92,7 +91,7 @@ int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex)
 {
   BiquadFilter* filter = &biquadFilters[filterIndex];
 
-  double fInSample = (float)(sample); // TODO: vers e é necessário o shift
+  double fInSample = (float)(sample);
   double fOutSample =
       filter->b0 * fInSample
     + filter->b1 * filter->in_z1
@@ -112,6 +111,17 @@ int16_t AudioUserDsp_BiquadFilter(int16_t sample, uint8_t filterIndex)
 
   return (int16_t)fOutSample;
 }
+
+int16_t AudioUserDsp_CalculateGain(uint16_t sliderY, SliderKnob* sliderKnob)
+{
+  double inputMin = sliderKnob->sliderY;
+  double inputMax = sliderKnob->sliderY + sliderKnob->sliderHeight;
+  double outputMax = 15;
+  double outputMin = -15;
+  int16_t newGain = outputMax + (sliderKnob->knobY - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
+  return newGain;
+}
+
 
 void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth)
 {
