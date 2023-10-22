@@ -401,7 +401,7 @@ static int8_t USB_AudioStreamingInputDataReceived(uint16_t data_len, uint32_t no
       sliderKnobs[i].isPressed = false;
       int16_t newGain = AudioUserDsp_CalculateGain(i, &sliderKnobs[i]);
       if(newGain != biquadFilters[i].gain)
-        AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, biquadFilters[i].frequency, biquadFilters[i].bandwidth);
+        AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, biquadFilters[i].frequency, biquadFilters[i].Q);
     }
   }
  

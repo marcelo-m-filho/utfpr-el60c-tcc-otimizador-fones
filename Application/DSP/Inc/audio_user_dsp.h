@@ -11,7 +11,7 @@
 typedef struct BiquadFilter {
   float b0, b1, b2, a1, a2;
   float in_z1, in_z2, out_z1, out_z2;
-  int32_t gain, frequency, bandwidth;
+  int32_t gain, frequency, Q;
   bool isInitialized;
 } BiquadFilter;
 

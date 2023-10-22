@@ -123,11 +123,11 @@ int16_t AudioUserDsp_CalculateGain(uint16_t sliderY, SliderKnob* sliderKnob)
 }
 
 
-void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t bandwidth)
+void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t frequency, int16_t Q)
 {
   double A = pow(10.0, gain / 40.0);
   double omega = 2.0 * PI * frequency / USB_AUDIO_CONFIG_PLAY_DEF_FREQ;
-  double alpha = sin(omega) * sinh(log(2) / 2.0 * bandwidth * omega / sin(omega));
+  double alpha = sin(omega) / (2.0 * Q);
 
   double b0 = 1.0 + alpha * A;
   double b1 = -2.0 * cos(omega);
@@ -144,7 +144,7 @@ void AudioUserDsp_BiquadFilterConfig(BiquadFilter* filter, int16_t gain, int16_t
 
   filter->gain = gain;
   filter->frequency = frequency;
-  filter->bandwidth = bandwidth;
+  filter->Q = Q;
   
   if(!filter->isInitialized)
   {
