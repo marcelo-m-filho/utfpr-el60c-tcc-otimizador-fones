@@ -12,6 +12,7 @@
 
 // includes --------------------------------------------------------------------
 #include "stm32f7xx.h"
+#include "audio_node.h"
 
 extern UART_HandleTypeDef UART1_Handle;
 

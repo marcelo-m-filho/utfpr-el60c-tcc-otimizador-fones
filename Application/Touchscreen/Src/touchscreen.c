@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "user_lcd.h"
-
+#include "flash_persistence.h"
 /** @addtogroup STM32F7xx_HAL_Examples
  * @{
  */
@@ -66,14 +66,14 @@ void                    Touchscreen_DrawBackground_Circles(uint8_t state);
 static uint32_t Touchscreen_Handle_NewTouch(void);
 #endif // TS_MULTI_TOUCH_SUPPORTED == 1
 /* Private functions ---------------------------------------------------------*/
-
-extern uint32_t xDebug[100];
-extern CircleButtonTypeDef circleButtons[];
+extern int16_t frequencies[];
+extern int16_t bandwidths[];
 extern uint32_t divider;
 extern bool shouldPrintSamples;
 extern bool shouldApplyFilter;
 bool areInitialCirclesDrawn = false;
 
+#define CIRCLE_BUTTON_DEBOUNCE_TIMER 100
 uint32_t yOffset = 0;
 uint32_t xOffset = 150;
 
@@ -94,22 +94,144 @@ void Touchscreen_ButtonHandler(void)
   initStatus = BSP_TS_GetState(&TS_State);
 
   if(!TS_State.touchDetected)
+  {
+    for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++) 
+    {
+      if(++circleButtons[i].debounceTimer > CIRCLE_BUTTON_DEBOUNCE_TIMER)
+        circleButtons[i].debounceTimer = CIRCLE_BUTTON_DEBOUNCE_TIMER;
+    }
     return;
+  }
 
   touchXPosition = TS_State.touchX[0];
   touchYPosition = TS_State.touchY[0];
 
-  for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
-
-  if((touchYPosition > circleButtons[i].y - circleButtons[i].radius) && (touchYPosition < circleButtons[i].y + circleButtons[i].radius))
+  for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++) 
   {
-    if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
+    if((touchYPosition > circleButtons[i].y - circleButtons[i].radius) && (touchYPosition < circleButtons[i].y + circleButtons[i].radius))
     {
-      LCD_UpdateButton(i, true, true);
+      if((touchXPosition > circleButtons[i].x - circleButtons[i].radius) && (touchXPosition < circleButtons[i].x + circleButtons[i].radius))
+      {
+        
+        if(circleButtons[i].debounceTimer == CIRCLE_BUTTON_DEBOUNCE_TIMER)
+          LCD_UpdateButton(i, !circleButtons[i].isPressed, false);
+
+        circleButtons[i].debounceTimer = 0;
+
+        return;
+      }
     }
   }
 
-  // one or two touches have been detected; position of first touch is retrieved
+  if(circleButtons[0].isActive)
+  {  
+    if(touchYPosition > saveButton.y && touchYPosition < saveButton.y + saveButton.height)
+    {
+      if(touchXPosition > saveButton.x && touchXPosition < saveButton.x + saveButton.width)
+      {
+        if(!saveButton.isPressed)
+        {
+          saveButton.isPressed = true;
+          saveButton.isActive = true;
+          resetButton.isPressed = false;
+          resetButton.isActive = false;
+          undoButton.isPressed = false;
+          undoButton.isActive = false;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          FlashPersistence_Write();
+        }
+
+        return;
+      }
+    }  
+    else if(touchYPosition > undoButton.y && touchYPosition < undoButton.y + undoButton.height)
+    {
+      if(touchXPosition > undoButton.x && touchXPosition < saveButton.x + undoButton.width)
+      {
+        if(!undoButton.isPressed)
+        {
+          saveButton.isPressed = false;
+          saveButton.isActive = false;
+          undoButton.isPressed = true;
+          undoButton.isActive = true;
+          resetButton.isPressed = false;
+          resetButton.isActive = false;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+            LCD_DisplayKnob(i, FlashPersistence_Read(i));
+        }
+
+        return;
+      }
+    }
+    else if(touchYPosition > resetButton.y && touchYPosition < resetButton.y + resetButton.height)
+    {
+      if(touchXPosition > resetButton.x && touchXPosition < resetButton.x + resetButton.width)
+      {
+        if(!resetButton.isPressed)
+        {
+          saveButton.isPressed = false;
+          saveButton.isActive = false;
+          undoButton.isPressed = false;
+          undoButton.isActive = false;
+          resetButton.isPressed = true;
+          resetButton.isActive = true;
+          LCD_UpdateRectangleButton(&saveButton);
+          LCD_UpdateRectangleButton(&undoButton);
+          LCD_UpdateRectangleButton(&resetButton);
+          for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+          {
+            AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], 0, frequencies[i], bandwidths[i]);
+            LCD_DisplayKnob(i, LCD_TranslateGainToKnobPosition(i, 0));
+          }
+        }
+
+        return;
+      }
+    }
+
+    for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    {
+      if((touchYPosition > sliderKnobs[i].sliderY + 10) && (touchYPosition < sliderKnobs[i].sliderY + sliderKnobs[i].sliderHeight - 10))
+      {
+        if((touchXPosition > sliderKnobs[i].sliderX) && (touchXPosition < sliderKnobs[i].sliderX + sliderKnobs[i].sliderWidth))
+        {
+          if(++sliderKnobs[i].debounceCount >= sliderKnobs[i].debouceLimit)
+          {
+            LCD_DisplayKnob(i, touchYPosition);
+            sliderKnobs[i].isPressed = true;
+            sliderKnobs[i].debounceCount = 0;
+
+            resetButton.isPressed = false;
+            saveButton.isPressed = false;
+            undoButton.isPressed = false;
+            
+            if(resetButton.isActive)
+            {
+              resetButton.isActive = false;
+              LCD_UpdateRectangleButton(&resetButton);
+            }
+            if(saveButton.isActive)
+            {
+              saveButton.isActive = false;
+              LCD_UpdateRectangleButton(&saveButton);
+            }
+            if(undoButton.isActive)
+            {
+              undoButton.isActive = false;
+              LCD_UpdateRectangleButton(&undoButton);
+            } 
+            return;
+          }
+        }
+      }
+    }
+  }
+
 }
 
 

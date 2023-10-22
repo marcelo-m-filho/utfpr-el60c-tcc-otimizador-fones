@@ -3,7 +3,7 @@
 #include "stlogo.h"
 #include "usb_audio.h"
 #include "usart.h"
-
+#include "flash_persistence.h"
 #include "user_lcd.h"
 
 // private variables -----------------------------------------------------------
@@ -26,8 +26,8 @@ uint8_t pColLeft[]        = {0x00, 0x00, 0x01, 0x8F}; // 0 -> 399
 uint8_t pColRight[]       = {0x01, 0x90, 0x03, 0x1F}; // 400 -> 799
 uint8_t pPage[]           = {0x00, 0x00, 0x01, 0xDF}; // 0 -> 479
 uint8_t pSyncLeft[]       = {0x02, 0x15};             // Scan @ 533
-
-uint32_t xDebug[100];
+extern int16_t frequencies[];
+extern int16_t bandwidths[];
 
 #if USE_AUDIO_TIMER_VOLUME_CTRL
 TIM_HandleTypeDef TimHandle;
@@ -58,7 +58,6 @@ extern CircleButtonTypeDef circleButtons[];
  */
 int main(void)
 {
-	memset(xDebug, 0, sizeof xDebug);
 
 	CPU_CACHE_Enable();
 
@@ -81,50 +80,40 @@ int main(void)
 	USART1_UART_Init();
 	LCD_Init();
 	Touchscreen_Init();
-
-
+	
 	uint8_t initString[] = "\r\n--- Horoscope Initialization Complete! ---\r\n";
 	HAL_UART_Transmit(&UART1_Handle, initString, sizeof(initString), 10);
+
+	uint8_t readingString[] = "\r\nReading data from storage...\r\n";
+	HAL_UART_Transmit(&UART1_Handle, readingString, sizeof(readingString), 10);
+
+	FlashPersistence_Restore();
+	for(int i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+	{
+		int16_t newGain = AudioUserDsp_CalculateGain(i, &sliderKnobs[i]);
+		AudioUserDsp_BiquadFilterConfig(&biquadFilters[i], newGain, frequencies[i], bandwidths[i]);
+	}
+
+
+	uint8_t readFinishedString[] = "\r\nRead finished!\r\n";
+	HAL_UART_Transmit(&UART1_Handle, readFinishedString, sizeof(readFinishedString), 10);
+
 
   #if USE_AUDIO_TIMER_VOLUME_CTRL
 	// configures timer for volume control handling
 	Timer_Init();
   #endif // USE_AUDIO_TIMER_VOLUME_CTRL
 
-	int32_t messageCounter = 0;
-	uint8_t messageCounterString[100];
-
 	// Infinite loop
 	while (1)
 	{
-		if(++touchscreenTimer > 10)
+		if(++touchscreenTimer > 40)
 		{
 			Touchscreen_ButtonHandler();
 			touchscreenTimer = 0;
 		}
 
-		if(shouldPrintSamples)
-		{
-			LCD_PrintDebugVariable(20, true);
-			shouldPrintSamples = false;
-		}
-
-    if(circleButtons[5].isPressed && ++serialSendTimer > 10000)
-    {
-      LCD_UpdateButton(5, false, false);
-      serialSendTimer = 0;
-    }
-    
-
-		if(++serialTimer > 1000)
-		{
-			uint8_t stringSize = sprintf((char*)messageCounterString, "Horoscope [architecture-fix] with BSP via Serial (%i)\r\n", (int)messageCounter);
-			HAL_UART_Transmit(&UART1_Handle, messageCounterString, stringSize, 10);
-			messageCounter++;
-			serialTimer = 0;
-		}
-
-		if(++watchdogTimer > 10)
+		if(++watchdogTimer > 500)
 		{
 			LCD_UpdateWatchdog(&watchdogCounter);
 			watchdogTimer = 0;

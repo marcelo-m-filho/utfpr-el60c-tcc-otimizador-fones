@@ -15,6 +15,7 @@
                 "${workspaceFolder}/Application/USB_Device_Audio/Inc",
                 "${workspaceFolder}/Application/DSP/Inc",
                 "${workspaceFolder}/Application/User/Inc",
+                "${workspaceFolder}/Application/Persistence/Inc",
                 "${workspaceFolder}/Application/USART/Inc",
                 "${workspaceFolder}/Utilities/Fonts",
                 "${workspaceFolder}/Drivers/CMSIS/Include",

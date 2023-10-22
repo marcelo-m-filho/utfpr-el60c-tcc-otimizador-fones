@@ -24,6 +24,8 @@ void Error_Handler(void);
 
 UART_HandleTypeDef UART1_Handle;
 
+#define SEND_MANY_BUFFER_SIZE 100
+
 void USART1_UART_Init(void)
 {
     UART1_Handle.Instance           = USART1; 

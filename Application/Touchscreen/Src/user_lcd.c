@@ -1,4 +1,5 @@
 #include "user_lcd.h"
+#define FOREGROUND_LAYER_OFFSET  (800 * 480 * sizeof(uint16_t))  // Adjust this offset based on your needs
 
 // pictures -----------------------------------------------------------
 #include "utfprlogo.h"
@@ -26,25 +27,84 @@
 #define LAYER_SIZE_Y            130
 #define LAYER_BYTE_PER_PIXEL    RGB565_BYTE_PER_PIXEL
 
+#define BUTTON_BORDER_SIZE 2
+#define Y_BAR_POSITION -60
+
 // private function declarations --------------------------------------
 static void     LCD_LayertInit(uint16_t LayerIndex, uint32_t Address);
 static void     Display_StartupScreen(void);
 static uint8_t  CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize, uint32_t ySize, uint16_t x, uint16_t y);
+void LCD_DisplayPlusButton(uint8_t buttonIndex);
 
 // variables ----------------------------------------------------------
 // !! THE NUMBER_OF_CIRCLE_BUTTONS DEFINE HAS TO BE UP TO DATE WITH THE NUMBER OF BUTTONS DEFINED HERE
 CircleButtonTypeDef circleButtons[] = {
-  { 100, 420, 50, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Off",   "", true, false, false},
-  { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Bass",  "", false, false, false},
-  { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Virt",  "", false, false, false},
-  { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Delay", "", false, false, false},
-  { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Reverb","", false, false, false},
-  { 650, 120, 50, LCD_COLOR_LIGHTBLUE, LCD_COLOR_BLACK, "Sending", "Debug", false, true, false}
+  //  x,   y,  r,               color,       text color,        on,     off,  pressed, independent, active
+  { 100, 440, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "EQ",     "",       false,     false,      false, 0},
+  { 150, 440, 30, LCD_COLOR_BURGUNDY,   LCD_COLOR_BLACK, "Vol",     "",       false,     false,      false, 0},
+  // { 250, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Volume",  "",       false,    false,      false},
+  // { 400, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Low Pass",     "",       false,    false,      false},
+  // { 550, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "Biquad",     "",       false,    false,      false},
+  // { 700, 420, 50, LCD_COLOR_MINT_GREEN, LCD_COLOR_BLACK, "NYI",     "",       false,    false,      false},
+  // { 650, 120, 50, LCD_COLOR_LIGHTBLUE,  LCD_COLOR_BLACK, "Sending", "Debug",  false,    true,       false}
+};
+
+RectangleButton saveButton = {
+  .x = 20,
+  .y = 200,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Salvar",
+  .isPressed = false,
+  .isActive = false
+};
+
+RectangleButton undoButton = {
+  .x = 20,
+  .y = 200 + 60,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Desfazer",
+  .isPressed = false,
+  .isActive = false
+};
+
+
+RectangleButton resetButton = {
+  .x = 20,
+  .y = 200 + 60 + 60,
+  .width = 180,
+  .height = 50,
+  .inactiveColor = LCD_COLOR_LIGHTGRAY,
+  .activeColor = LCD_COLOR_LIGHTGREEN,
+  .text = "Redefinir",
+  .isPressed = false,
+  .isActive = false
+};
+
+
+IncrementButton plusButtons[] = {
+  { 100, 150, 50, 50, LCD_COLOR_BLACK, LCD_COLOR_WHITE, "+", false, 1},
+  // { 150, 100, 30, 30, LCD_COLOR_BLACK, LCD_COLOR_WHITE, "+", false, 1}
+};
+
+SliderKnob sliderKnobs[] = {
+  { 200 + 50,  25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 110, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 170, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 230, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 290, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 350, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 410, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7},
+  { 200 + 470, 25, 60, 400, LCD_COLOR_BLACK, 160, 20, false, 5, 7}
 };
 
 // external variable declarations -------------------------------------
 extern LTDC_HandleTypeDef hltdc_discovery;
-extern uint32_t xDebug[100];
 /**
  * @brief  Initializes the DSI LCD.
  * The ititialization is done as below:
@@ -105,7 +165,6 @@ static void LCD_LayertInit(uint16_t LayerIndex, uint32_t Address)
 
 static void Display_StartupScreen(void)
 {
-
   // sets lcd foreground layer
   BSP_LCD_SelectLayer(0);
 
@@ -113,35 +172,72 @@ static void Display_StartupScreen(void)
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_Clear(LCD_COLOR_WHITE);
 
-  // sets the lcd text color and font
-  BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
-  BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
+  LCD_UpdateState();
+}
 
-  // displays header messages
-  // BSP_LCD_DisplayStringAt(0, 10, (uint8_t *)"HOP", CENTER_MODE);
-  // BSP_LCD_DisplayStringAt(0, 35, (uint8_t *)"Versao W26", CENTER_MODE);
+void LCD_UpdateState()
+{
 
-  // displays footer
-  // BSP_LCD_SetFont(&Font12);
-  // BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 20, (uint8_t *)"Apple Pie - commit b1bb6358", CENTER_MODE);
+  if(circleButtons[0].isActive)
+  {
+    // displays background
+    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DisplayStringAt(sliderKnobs[0].sliderX, 0, (uint8_t *)" 30  60 150 400 1k 3k 8k 16k", LEFT_MODE);
+    BSP_LCD_FillRect(sliderKnobs[0].sliderX - 2, sliderKnobs[0].sliderY - 2, NUMBER_OF_SLIDER_BUTTONS * sliderKnobs[0].sliderWidth + 4, sliderKnobs[0].sliderHeight + 4);
 
-  // draws logo picture
-  BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, (WVGA_RES_X / 2) - (UTFPR_LOGO_WIDTH / 2), 80);
+    // displays option buttons
+    LCD_UpdateRectangleButton(&saveButton);
+    LCD_UpdateRectangleButton(&resetButton);
+    LCD_UpdateRectangleButton(&undoButton);
 
-  // displays content messages
-  BSP_LCD_SetFont(&Font24);
-  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-  BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + 15, BSP_LCD_GetXSize(), 90);
+    // displays sliders and their knobs
+    for(uint8_t i = 0; i < NUMBER_OF_SLIDER_BUTTONS; i++)
+    {
+      LCD_InitSlider(i);
+      LCD_DisplayKnob(i, sliderKnobs[i].knobY);
+    }
+  }
+  else
+  {
+    // default state: displays background
 
-  BSP_LCD_SetBackColor(LCD_COLOR_YELLOW);
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 30, (uint8_t *)"Versao Horoscope", CENTER_MODE);
-  BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + 60, (uint8_t *)"Branch touch-screen-refactor", CENTER_MODE);
+    // clears display
+    BSP_LCD_Clear(LCD_COLOR_WHITE);
 
+    // displays logo
+    BSP_LCD_DrawPicture(utfprlogo, UTFPR_LOGO_WIDTH, UTFPR_LOGO_HEIGHT, 20, 20);
+
+    // displays background yellow line
+    BSP_LCD_SetFont(&Font24);
+    BSP_LCD_SetTextColor(LCD_COLOR_UTFPRYELLOW);
+    BSP_LCD_FillRect(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION, BSP_LCD_GetXSize(), 90);
+
+    // displays background text
+    BSP_LCD_SetBackColor(LCD_COLOR_UTFPRYELLOW);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 15, (uint8_t *)"V1.0", CENTER_MODE);
+    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() / 2 + Y_BAR_POSITION + 45, (uint8_t *)"Branch Biquad", CENTER_MODE);
+  }
+
+  // circle buttons are always updated
   for(uint8_t i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
   {
-    LCD_UpdateButton(i, circleButtons[i].isPressed, false);
+    // draws button border
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_FillCircle(circleButtons[i].x, circleButtons[i].y, circleButtons[i].radius);
+
+    // draws button inner circle
+    BSP_LCD_SetTextColor(circleButtons[i].isPressed ? LCD_COLOR_LIGHTGREEN : LCD_COLOR_LIGHTGRAY);
+    BSP_LCD_FillCircle(circleButtons[i].x, circleButtons[i].y, circleButtons[i].radius - 3);
+
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+    BSP_LCD_DisplayStringAt(circleButtons[i].x - circleButtons[i].radius - 12, circleButtons[i].y - circleButtons[i].radius - 24, (uint8_t *)circleButtons[i].onText, LEFT_MODE);
+
+
   }
+
 }
 
 /**
@@ -204,48 +300,104 @@ static uint8_t CopyImageToLcdFrameBuffer(void *pSrc, void *pDst, uint32_t xSize,
   return(lcd_status);
 }
 
+
+void LCD_DisplayPlusButton(uint8_t buttonIndex)
+{
+  IncrementButton* button = &plusButtons[buttonIndex];
+
+  BSP_LCD_SetTextColor(button->color);
+  BSP_LCD_FillRect(button->x, button->y, button->width, button->height);
+
+
+  BSP_LCD_SetBackColor(button->color);
+  BSP_LCD_SetTextColor(button->textColor);
+  BSP_LCD_DisplayStringAt(button->x + button->width + 5, button->y + button->height - 20, (uint8_t *)button->text, LEFT_MODE);
+}
+
+void LCD_UpdateRectangleButton(RectangleButton* button)
+{
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_FillRect(button->x - BUTTON_BORDER_SIZE, button->y - BUTTON_BORDER_SIZE, button->width + (2*BUTTON_BORDER_SIZE), button->height + (2*BUTTON_BORDER_SIZE));
+  BSP_LCD_SetTextColor(button->isActive ? button->activeColor : button->inactiveColor);
+  BSP_LCD_FillRect(button->x, button->y, button->width, button->height);
+
+  BSP_LCD_SetBackColor(button->isActive ? button->activeColor : button->inactiveColor);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(button->x + 5, button->y + button->height / 2 - 6, (uint8_t *)button->text, LEFT_MODE);
+}
+
+void LCD_InitSlider(uint8_t knobIndex)
+{
+  SliderKnob* knob = &sliderKnobs[knobIndex];
+
+  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  BSP_LCD_FillRect(knob->sliderX, knob->sliderY, knob->sliderWidth, knob->sliderHeight);
+
+  BSP_LCD_SetTextColor(knob->sliderColor);
+  BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->sliderY + 10, 10, knob->sliderHeight - 20);
+}
+
+void LCD_DisplayKnob(uint8_t knobIndex, uint16_t newKnobY)
+{
+  SliderKnob* knob = &sliderKnobs[knobIndex];
+
+  // clears the previous spot if it moved
+  if(newKnobY != knob->knobY)
+  {
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_FillRect(knob->sliderX + 3, knob->knobY - 5, knob->sliderWidth - 3, 12);
+
+    BSP_LCD_SetTextColor(knob->sliderColor);
+    BSP_LCD_FillRect((knob->sliderX + (knob->sliderWidth / 2)-5), knob->knobY - 5, 10, 12);
+  }
+
+  BSP_LCD_SetTextColor(knob->sliderColor);
+  BSP_LCD_FillRect(knob->sliderX + 3, newKnobY - 5, knob->sliderWidth - 3, 12);
+
+  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  BSP_LCD_FillRect(knob->sliderX + 5, newKnobY - 3, knob->sliderWidth - 7, 8);
+
+  knob->knobY = newKnobY;
+
+  double inputMin = knob->sliderY;
+  double inputMax = knob->sliderY + knob->sliderHeight;
+  double outputMax = 15;
+  double outputMin = -15;
+  int16_t newGain = outputMax + (knob->knobY - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
+  char text[5];
+  if(newGain <= -10)
+    sprintf(text, "%03i", newGain);
+  else if(newGain < 0)
+    sprintf(text, " %02i", newGain);
+  else if (newGain < 10)
+    sprintf(text, "  %01i", newGain);
+  else
+    sprintf(text, " %02i", newGain);
+
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringAt(knob->sliderX, 450, (uint8_t *)text, LEFT_MODE);
+}
+
+int16_t LCD_TranslateGainToKnobPosition(uint8_t knobIndex, uint16_t gain)
+{
+  SliderKnob* knob = &sliderKnobs[knobIndex];
+  double outputMin = knob->sliderY;
+  double outputMax = knob->sliderY + knob->sliderHeight;
+  double inputMin = -15;
+  double inputMax = 15;
+  int16_t knobPosition = outputMax + (gain - inputMin) * (outputMin - outputMax) / (inputMax - inputMin);
+  return knobPosition;
+  // knob->knobY = knobPosition;
+}
+
 void LCD_UpdateButton(uint8_t buttonIndex, bool isPressed, bool shouldToggleOtherButtons)
 {
   CircleButtonTypeDef* button = &circleButtons[buttonIndex];
 
-  if(button->isActive && button->isPressed == isPressed)
-  {
-    return;
-  }
-
   button->isPressed = isPressed;
-
-  if(!button->isActive)
-  {
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    BSP_LCD_FillCircle(button->x, button->y, button->radius);
-    button->isActive = true;
-  }
-
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_FillCircle(button->x, button->y, button->radius);
-
-  BSP_LCD_SetTextColor(button->isPressed ? button->color : LCD_COLOR_LIGHTGRAY);
-  BSP_LCD_FillCircle(button->x, button->y, button->radius - 5);
-
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->offText : button->onText), LEFT_MODE);
-
-  BSP_LCD_SetTextColor(button->textColor);
-  BSP_LCD_DisplayStringAt(button->x - button->radius - 12, button->y - button->radius - 24, (uint8_t *)(button->isPressed ? button->onText : button->offText), LEFT_MODE);
-
-  if(!button->isIndependent && shouldToggleOtherButtons)
-  {
-
-    for(int i = 0; i < NUMBER_OF_CIRCLE_BUTTONS; i++)
-    {
-      if(i != buttonIndex && !circleButtons[i].isIndependent)
-        LCD_UpdateButton(i, false, false);
-    }
-  }
-
+  button->isActive = isPressed;
+  LCD_UpdateState();
 }
 
 void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
@@ -260,40 +412,6 @@ void LCD_UpdateWatchdog (uint32_t* watchdogCounter)
     *watchdogCounter = 0;
 }
 
-void LCD_PrintDebugVariable(uint8_t columns, bool printAsShort)
-{
-  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-
-  for(uint8_t position = 0; position < columns; position++)
-  {
-    uint32_t yOffset = 100 + 18 * position;
-    char desc[200];
-
-    if(printAsShort)
-    {
-      sprintf(
-        desc,
-        "%06i|%06i",
-        ((int16_t)xDebug[2 * position + 0]),
-        ((int16_t)xDebug[2 * position + 1])
-        );
-    }
-    else
-    {
-      sprintf(
-        desc,
-        "%04i|%04i|%04i|%04i",
-        ((int8_t)xDebug[4 * position + 0]),
-        ((int8_t)xDebug[4 * position + 1]),
-        ((int8_t)xDebug[4 * position + 2]),
-        ((int8_t)xDebug[4 * position + 3])
-        );
-    }
-
-    BSP_LCD_DisplayStringAt(0, yOffset, (uint8_t *)desc, CENTER_MODE);
-  }
-}
 
 void BSP_LCD_DrawPicture(const uint8_t* image, uint32_t width, uint32_t height, uint32_t xPosition, uint32_t yPosition )
 {
